@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Security.Claims;
@@ -34,6 +34,12 @@ namespace WebClient.Pages.Auth
             {
                 Response.Redirect("/Admin/Index");
             }
+        }
+
+        public async Task<IActionResult> OnGetLogoutAsync()
+        {
+            await HttpContext.SignOutAsync("MyCookieAuth");
+            return RedirectToPage("/Auth/Login");
         }
 
         public async Task<IActionResult> OnPostAsync()
