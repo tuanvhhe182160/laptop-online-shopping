@@ -1,4 +1,142 @@
-﻿@page
+@page
 @model WebClient.Pages.Storefront.IndexModel
 @{
+    ViewData["Title"] = "Cửa hàng Laptop Online";
+}
+
+<div class="container py-4">
+    <!-- Hero Header Section -->
+    <div class="row mb-5 text-center bg-light p-5 rounded-4 shadow-sm border position-relative overflow-hidden" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+        <div class="col-12 position-relative">
+            <h1 class="display-4 fw-bold text-primary mb-3">Thế Giới Laptop Online</h1>
+            <p class="lead text-secondary max-width-600 mx-auto">Trải nghiệm mua sắm Laptop công nghệ cao cấp nhất, chính hãng cùng hàng ngàn ưu đãi hấp dẫn.</p>
+        </div>
+    </div>
+
+    <!-- Search and Filter Form -->
+    <div class="card shadow-sm border mb-4 rounded-3">
+        <div class="card-body bg-white p-4">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="Search" class="form-label fw-semibold text-muted small">Tìm kiếm sản phẩm</label>
+                    <input type="text" class="form-control rounded-pill border-secondary-subtle px-3" asp-for="Search" placeholder="Nhập tên hoặc mã laptop..." />
+                </div>
+                <div class="col-md-3">
+                    <label for="CategoryId" class="form-label fw-semibold text-muted small">Hãng sản xuất</label>
+                    <select class="form-select rounded-pill border-secondary-subtle" asp-for="CategoryId">
+                        <option value="">-- Tất cả Hãng --</option>
+                        @foreach (var cat in Model.Categories)
+                        {
+                            <option value="@cat.CategoryId">@cat.CategoryName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="MinPrice" class="form-label fw-semibold text-muted small">Giá từ (VND)</label>
+                    <input type="number" step="100000" class="form-control rounded-pill border-secondary-subtle" asp-for="MinPrice" placeholder="0" />
+                </div>
+                <div class="col-md-2">
+                    <label for="MaxPrice" class="form-label fw-semibold text-muted small">Đến (VND)</label>
+                    <input type="number" step="100000" class="form-control rounded-pill border-secondary-subtle" asp-for="MaxPrice" placeholder="Ví dụ: 30000000" />
+                </div>
+                <div class="col-md-1 d-flex align-items-end justify-content-end">
+                    <button type="submit" class="btn btn-primary rounded-pill w-100 py-2"><i class="bi bi-search"></i> Lọc</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Products Grid -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+        @if (Model.Laptops != null && Model.Laptops.Count > 0)
+        {
+            foreach (var item in Model.Laptops)
+            {
+                var fullImageUrl = item.ImageUrl.StartsWith("http") 
+                    ? item.ImageUrl 
+                    : (string.IsNullOrEmpty(Model.ApiBaseUrl) ? "" : Model.ApiBaseUrl) + item.ImageUrl;
+
+                <div class="col">
+                    <div class="card h-100 border-0 shadow-sm rounded-3 product-card transition-hover">
+                        <!-- Product Badge -->
+                        <span class="badge bg-success position-absolute m-2 end-0 rounded-pill">Sẵn hàng</span>
+                        
+                        <!-- Product Image -->
+                        <div class="d-flex align-items-center justify-content-center bg-light rounded-top-3 p-3 position-relative" style="height: 200px; overflow: hidden;">
+                            <img src="@fullImageUrl" class="card-img-top img-fluid" style="max-height: 100%; max-width: 100%; object-fit: contain;" alt="@item.LaptopName" onerror="this.onerror=null;this.src='/favicon.ico';this.style.width='50px';this.style.height='50px';" />
+                        </div>
+                        
+                        <!-- Product Body -->
+                        <div class="card-body d-flex flex-column p-3">
+                            <span class="text-uppercase text-muted fw-bold small">@item.Category?.CategoryName</span>
+                            <h5 class="card-title text-dark fw-bold mt-1 text-truncate" title="@item.LaptopName">@item.LaptopName</h5>
+                            <p class="text-secondary small mb-2">Mã sản phẩm: <span class="badge bg-secondary-subtle text-secondary">@item.LaptopCode</span></p>
+                            
+                            <div class="mt-auto d-flex justify-content-between align-items-center pt-2 border-top">
+                                <div>
+                                    <span class="text-danger fw-bold fs-5">@item.Price.ToString("N0") <span class="small" style="font-size: 11px;">đ</span></span>
+                                </div>
+                                <div class="text-muted small">SL: @item.StockQuantity</div>
+                            </div>
+                        </div>
+
+                        <!-- Product Footer Buttons -->
+                        <div class="card-footer bg-white border-0 p-3 pt-0">
+                            <div class="row g-2">
+                                <div class="col-12">
+                                    <button class="btn btn-outline-primary btn-sm w-100 rounded-pill btn-add-cart" data-laptop-id="@item.LaptopId">
+                                        <i class="bi bi-cart-plus"></i> Thêm giỏ hàng
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12 text-center py-5">
+                <div class="text-muted">
+                    <i class="bi bi-laptop-fill display-1 text-secondary opacity-25"></i>
+                    <h3 class="mt-3">Không tìm thấy sản phẩm nào</h3>
+                    <p>Hãy thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm khác.</p>
+                    <a href="/Storefront/Index" class="btn btn-outline-primary rounded-pill px-4 mt-2">Xem tất cả Laptop</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .product-card {
+        transition: transform 0.25s ease-in-out, box-shadow 0.25s ease-in-out;
+        border: 1px solid #f0f0f0 !important;
+    }
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+    }
+    .transition-hover {
+        transition: all 0.25s ease;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Handle Add to Cart button click
+            $('.btn-add-cart').click(function() {
+                var laptopId = $(this).data('laptop-id');
+                // Notification for visual feedback (since Member 3 handles Cart module, we show alert)
+                Swal.fire({
+                    title: 'Giỏ hàng',
+                    text: 'Đã click thêm sản phẩm #' + laptopId + ' vào giỏ hàng!',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            });
+        });
+    </script>
 }
