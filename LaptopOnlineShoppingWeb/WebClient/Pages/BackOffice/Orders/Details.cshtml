@@ -1,0 +1,47 @@
+@page
+@model WebClient.Pages.BackOffice.Orders.DetailsModel
+@{
+    ViewData["Title"] = "Chi tiết Đơn hàng";
+}
+
+<div class="container mt-4">
+    <h2>Chi tiết Đơn hàng #@Model.Order.OrderId</h2>
+    <a href="/BackOffice/Orders" class="btn btn-secondary mb-3">Quay lại danh sách</a>
+
+    <div class="card mb-4">
+        <div class="card-header">Thông tin chung</div>
+        <div class="card-body">
+            <p><strong>Khách hàng:</strong> @Model.Order.CustomerName</p>
+            <p><strong>Ngày Đặt:</strong> @Model.Order.OrderDate?.ToString("dd/MM/yyyy HH:mm")</p>
+            <p><strong>Phương thức Thanh toán:</strong> @Model.Order.PaymentMethod</p>
+            <p><strong>Trạng thái TT:</strong> @(Model.Order.PaymentStatus == true ? "Đã TT" : "Chưa TT")</p>
+            <p><strong>Trạng thái Đơn hàng:</strong> <span class="badge bg-info">@Model.Order.OrderStatus</span></p>
+            <h4><strong>Tổng Tiền:</strong> @Model.Order.TotalAmount.ToString("N0") VNĐ</h4>
+        </div>
+    </div>
+
+    <h4>Sản phẩm đã đặt</h4>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Mã SP</th>
+                <th>Tên SP</th>
+                <th>Đơn giá</th>
+                <th>Số lượng</th>
+                <th>Thành tiền</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Order.Details)
+            {
+                <tr>
+                    <td>@item.LaptopId</td>
+                    <td>@item.LaptopName</td>
+                    <td>@item.UnitPrice.ToString("N0") VNĐ</td>
+                    <td>@item.Quantity</td>
+                    <td>@item.TotalPrice.ToString("N0") VNĐ</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

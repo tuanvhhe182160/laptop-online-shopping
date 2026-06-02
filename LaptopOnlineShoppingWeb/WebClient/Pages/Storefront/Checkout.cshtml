@@ -1,0 +1,67 @@
+@page
+@model WebClient.Pages.Storefront.CheckoutModel
+@{
+    ViewData["Title"] = "Thanh toán";
+}
+
+<div class="container mt-5">
+    <h2>Xác nhận Đơn hàng</h2>
+
+    <div class="row">
+        <div class="col-md-8">
+            <h4>Thông tin giao hàng</h4>
+            <form id="checkoutForm">
+                <input type="hidden" id="isBuyNow" value="@Model.IsBuyNow.ToString().ToLower()" />
+                <input type="hidden" id="laptopId" value="@Model.LaptopId" />
+                <input type="hidden" id="quantity" value="@Model.Quantity" />
+
+                <div class="mb-3">
+                    <label>Địa chỉ nhận hàng</label>
+                    <input type="text" id="shippingAddress" class="form-control" required />
+                </div>
+                <div class="mb-3">
+                    <label>Phương thức thanh toán</label>
+                    <select id="paymentMethod" class="form-select">
+                        <option value="COD">Thanh toán khi nhận hàng (COD)</option>
+                        <option value="BankTransfer">Chuyển khoản ngân hàng</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success">Hoàn tất đặt hàng</button>
+            </form>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">Tóm tắt đơn hàng</div>
+                <div class="card-body">
+                    @if (Model.IsBuyNow && Model.DirectPurchaseItem != null)
+                    {
+                        <p><strong>@Model.DirectPurchaseItem.LaptopName</strong></p>
+                        <p>Số lượng: @Model.DirectPurchaseItem.Quantity</p>
+                        <p>Thành tiền: @Model.DirectPurchaseItem.TotalPrice.ToString("N0") VNĐ</p>
+                        <hr />
+                        <h5>Tổng cộng: @Model.DirectPurchaseItem.TotalPrice.ToString("N0") VNĐ</h5>
+                    }
+                    else if (!Model.IsBuyNow && Model.CartSummary != null)
+                    {
+                        @foreach (var item in Model.CartSummary.Items)
+                        {
+                            <p><strong>@item.LaptopName</strong> (x @item.Quantity)</p>
+                            <p>@item.TotalPrice.ToString("N0") VNĐ</p>
+                        }
+                        <hr />
+                        <h5>Tổng cộng: @Model.CartSummary.TotalAmount.ToString("N0") VNĐ</h5>
+                    }
+                    else
+                    {
+                        <p>Không có sản phẩm nào để thanh toán.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/checkout.js"></script>
+}

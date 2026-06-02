@@ -1,0 +1,49 @@
+@page
+@model WebClient.Pages.BackOffice.Orders.IndexModel
+@{
+    ViewData["Title"] = "Quản lý Đơn hàng";
+}
+
+<div class="container mt-4">
+    <h2>Danh sách Đơn hàng</h2>
+
+    <table class="table table-striped table-bordered mt-3">
+        <thead class="table-dark">
+            <tr>
+                <th>Mã Đơn</th>
+                <th>Khách hàng</th>
+                <th>Ngày Đặt</th>
+                <th>Tổng Tiền</th>
+                <th>Phương thức TT</th>
+                <th>Thanh toán</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var o in Model.Orders)
+            {
+                <tr>
+                    <td>#@o.OrderId</td>
+                    <td>@o.CustomerName</td>
+                    <td>@o.OrderDate?.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@o.TotalAmount.ToString("N0") VNĐ</td>
+                    <td>@o.PaymentMethod</td>
+                    <td>
+                        @(o.PaymentStatus == true ? "Đã TT" : "Chưa TT")
+                    </td>
+                    <td><span class="badge bg-secondary" id="status-@o.OrderId">@o.OrderStatus</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="updateOrderStatus(@o.OrderId, '@o.OrderStatus')">Cập nhật</button>
+                        <a href="/BackOffice/Orders/Details?id=@o.OrderId" class="btn btn-sm btn-primary">Chi tiết</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal cập nhật trạng thái đơn hàng có thể thêm vào đây và điều khiển qua js -->
+@section Scripts {
+    <script src="~/js/order-management.js"></script>
+}
