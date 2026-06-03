@@ -1,4 +1,115 @@
 ﻿@page
 @model WebClient.Pages.Admin.Orders.IndexModel
+@using WebAPI.Enums
+@using WebClient.Models @* Khai báo để sử dụng enum OrderStatus ngoài giao diện *@
 @{
+    ViewData["Title"] = "Quản lý Đơn hàng";
+    Layout = "_AdminLayout";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary"><i class="bi bi-box-seam"></i> Quản lý Đơn hàng</h2>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle m-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="ps-3">Mã ĐH</th>
+                            <th>Ngày đặt</th>
+                            <th>Khách hàng</th>
+                            <th>Tổng tiền</th>
+                            <th>Trạng thái hiện tại</th>
+                            <th class="text-center">Cập nhật trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Orders != null && Model.Orders.Any())
+                        {
+                            foreach (var order in Model.Orders)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-bold">#@order.OrderId</td>
+                                    <td>@(order.OrderDate?.ToString("dd/MM/yyyy HH:mm"))</td>
+                                    <td>@order.CustomerName</td>
+                                    <td class="text-danger fw-bold">@order.TotalAmount.ToString("N0") đ</td>
+                                    <td>
+                                        @* Ép kiểu hoặc so sánh trực tiếp với enum để phân loại màu badge *@
+                                        @{
+                                            var badgeClass = order.OrderStatus switch
+                                            {
+                                                OrderStatus.Pending => "bg-warning text-dark",
+                                                OrderStatus.Processing => "bg-info text-dark",
+                                                OrderStatus.Shipped => "bg-primary",
+                                                OrderStatus.Delivered => "bg-success",
+                                                OrderStatus.Cancelled => "bg-danger",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @badgeClass fs-6">@order.OrderStatus</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <form method="post" asp-page-handler="UpdateStatus" class="d-flex justify-content-center gap-2">
+                                            <input type="hidden" name="orderId" value="@order.OrderId" />
+
+                                            <select name="status" class="form-select form-select-sm" style="width: 150px;">
+                                                @* Tự động duyệt qua toàn bộ các giá trị của enum OrderStatus *@
+                                                @foreach (OrderStatus statusVal in Enum.GetValues(typeof(OrderStatus)))
+                                                {
+                                                    <option value="@statusVal" selected="@(order.OrderStatus == statusVal)">@statusVal</option>
+                                                }
+                                            </select>
+
+                                            <button type="submit" class="btn btn-sm btn-outline-success">Lưu</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    Chưa có đơn hàng nào trong hệ thống.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // Dùng sự kiện DOMContentLoaded của JS thuần thay cho $(document).ready() của jQuery
+        document.addEventListener("DOMContentLoaded", function () {
+            // Lấy dữ liệu từ Backend đẩy sang
+            var successMsg = '@Html.Raw(TempData["SuccessMessage"])';
+            var errorMsg = '@Html.Raw(TempData["ErrorMessage"])';
+
+            if (successMsg && successMsg.trim() !== '') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Thành công',
+                    text: successMsg,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+
+            if (errorMsg && errorMsg.trim() !== '') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: errorMsg
+                });
+            }
+        });
+    </script>
 }

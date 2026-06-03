@@ -82,10 +82,21 @@
 
                         <!-- Product Footer Buttons -->
                         <div class="card-footer bg-white border-0 p-3 pt-0">
-                            <div class="row g-2">
-                                <div class="col-12">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-4">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">SL</span>
+                                        <input type="number" min="1" value="1" max="@item.StockQuantity" class="form-control form-control-sm buy-qty" data-laptop-id="@item.LaptopId" />
+                                    </div>
+                                </div>
+                                <div class="col-4">
                                     <button class="btn btn-outline-primary btn-sm w-100 rounded-pill btn-add-cart" data-laptop-id="@item.LaptopId">
                                         <i class="bi bi-cart-plus"></i> Thêm giỏ hàng
+                                    </button>
+                                </div>
+                                <div class="col-4">
+                                    <button class="btn btn-primary btn-sm w-100 rounded-pill text-white btn-buy-now" data-laptop-id="@item.LaptopId">
+                                        <i class="bi bi-bag-check"></i> Mua ngay
                                     </button>
                                 </div>
                             </div>
@@ -125,17 +136,89 @@
 @section Scripts {
     <script>
         $(document).ready(function() {
-            // Handle Add to Cart button click
-            $('.btn-add-cart').click(function() {
+            // Hàm bọc để gọi await cho cái getCartCount lúc tải trang
+            async function initCartCount() {
+                try {
+                    const count = await getCartCount();
+                    $('#cartCount').text(count || 0);
+                } catch (e) { console.error("Không thể lấy số lượng giỏ hàng", e); }
+            }
+            // Gọi hàm khởi tạo
+            initCartCount();
+
+            // Xử lý nút Thêm vào giỏ hàng
+            $('.btn-add-cart').click(async function() {
                 var laptopId = $(this).data('laptop-id');
-                // Notification for visual feedback (since Member 3 handles Cart module, we show alert)
-                Swal.fire({
-                    title: 'Giỏ hàng',
-                    text: 'Đã click thêm sản phẩm #' + laptopId + ' vào giỏ hàng!',
-                    icon: 'success',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
+                var qtyInput = $(`.buy-qty[data-laptop-id='${laptopId}']`);
+                var qty = parseInt(qtyInput.val()) || 1;
+
+                // Gọi API helper từ cart.js
+                const res = await addToCart(laptopId, qty);
+
+                if (res && res.ok) {
+                    // Update cart badge
+                    initCartCount();
+
+                    Swal.fire({
+                        title: 'Đã thêm vào giỏ hàng',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                } else {
+                    // XỬ LÝ LỖI CHƯA ĐĂNG NHẬP 401 TỪ cart.js
+                    if (res && res.message === 'NOT_AUTHENTICATED') {
+                        Swal.fire({
+                            title: 'Vui lòng đăng nhập',
+                            text: 'Bạn cần đăng nhập để thêm sản phẩm vào giỏ hàng.',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Đăng nhập ngay',
+                            cancelButtonText: 'Đóng'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                // Lưu lại đường dẫn hiện tại (ReturnUrl) để đăng nhập xong quay lại đây luôn
+                                window.location.href = `/Auth/CustomerLogin?ReturnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+                            }
+                        });
+                    } else {
+                        // Các lỗi khác như vượt quá tồn kho...
+                        Swal.fire({
+                            title: 'Lỗi',
+                            text: res && res.message ? res.message : 'Không thể thêm vào giỏ hàng',
+                            icon: 'error'
+                        });
+                    }
+                }
+            });
+
+            // Xử lý nút Mua ngay (Buy Now)
+            $('.btn-buy-now').click(function() {
+                // Kiểm tra bằng logic: Nếu không có dấu hiệu đã đăng nhập (vd không có menu Xin chào)
+                var isLoggedIn = @(User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Customer") ? "true" : "false");
+
+                if (!isLoggedIn) {
+                    Swal.fire({
+                        title: 'Vui lòng đăng nhập',
+                        text: 'Bạn cần đăng nhập để tiến hành thanh toán.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Đăng nhập ngay',
+                        cancelButtonText: 'Đóng'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = `/Auth/CustomerLogin?ReturnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+                        }
+                    });
+                    return;
+                }
+
+                var laptopId = $(this).data('laptop-id');
+                var qtyInput = $(`.buy-qty[data-laptop-id='${laptopId}']`);
+                var qty = parseInt(qtyInput.val()) || 1;
+
+                var url = `/Storefront/Checkout?buynow=true&laptopid=${laptopId}&qty=${qty}`;
+                window.location.href = url;
             });
         });
     </script>

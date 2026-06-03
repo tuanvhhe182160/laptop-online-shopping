@@ -1,11 +1,7 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using WebAPI.Data;
 using WebAPI.DTOs;
 using WebAPI.Entities;
 using WebAPI.Repositories;
-using WebAPI.Data;
-using Microsoft.EntityFrameworkCore;
 
 namespace WebAPI.Services
 {
@@ -21,18 +17,26 @@ namespace WebAPI.Services
     public class CartService : ICartService
     {
         private readonly ICartRepository _cartRepository;
-        private readonly ApplicationDbContext _context;
+        private readonly IGenericRepository<Laptop> _laptopRepository;
 
-        public CartService(ICartRepository cartRepository, ApplicationDbContext context)
+        public CartService(ICartRepository cartRepository, IGenericRepository<Laptop> laptopRepository)
         {
             _cartRepository = cartRepository;
-            _context = context;
+            _laptopRepository = laptopRepository;
         }
 
         public async Task<CartResponseDTO?> GetCartAsync(int customerId)
         {
             var cart = await _cartRepository.GetCartByCustomerIdAsync(customerId);
-            if (cart == null) return null;
+            if (cart == null)
+            {
+                return new CartResponseDTO
+                {
+                    CustomerId = customerId,
+                    Items = new List<CartItemResponseDTO>(),
+                    TotalAmount = 0
+                };
+            }
 
             var response = new CartResponseDTO
             {
@@ -52,14 +56,25 @@ namespace WebAPI.Services
 
         public async Task<bool> AddToCartAsync(int customerId, AddToCartRequestDTO dto)
         {
-            var cart = await _cartRepository.GetCartByCustomerIdAsync(customerId);
-            if (cart == null) return false;
-
-            var laptop = await _context.Laptops.FindAsync(dto.LaptopId);
+            var laptop = await _laptopRepository.GetByIdAsync(dto.LaptopId);
             if (laptop == null || laptop.Status == false) return false;
 
+            var cart = await _cartRepository.GetCartByCustomerIdAsync(customerId);
+            if (cart == null)
+            {
+                cart = new Cart
+                {
+                    CustomerId = customerId,
+                    CreatedDate = DateTime.Now,
+                    CartItems = new List<CartItem>()
+                };
+                await _cartRepository.AddAsync(cart);
+                //lưu xuống DB ngay để EF Core sinh ra CartId tự động
+                await _cartRepository.SaveAsync();
+            }
+
             var existingItem = cart.CartItems.FirstOrDefault(ci => ci.LaptopId == dto.LaptopId);
-            
+
             int newQuantity = dto.Quantity;
             if (existingItem != null)
             {
@@ -97,7 +112,7 @@ namespace WebAPI.Services
             var existingItem = cart.CartItems.FirstOrDefault(ci => ci.LaptopId == dto.LaptopId);
             if (existingItem == null) return false;
 
-            var laptop = await _context.Laptops.FindAsync(dto.LaptopId);
+            var laptop = await _laptopRepository.GetByIdAsync(dto.LaptopId);
             if (laptop == null || dto.Quantity > laptop.StockQuantity) return false;
 
             existingItem.Quantity = dto.Quantity;

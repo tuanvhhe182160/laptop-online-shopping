@@ -1,3 +1,11 @@
+@using System.Security.Claims
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    // Khai báo biến ở phạm vi cao nhất (Global scope của file)
+    var apiBaseUrl = Configuration["ApiSettings:BaseUrl"]?.TrimEnd('/') ?? "";
+    var accessToken = User.FindFirst("AccessToken")?.Value ?? "";
+}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,19 +14,21 @@
     <title>@ViewData["Title"] - WebClient</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/WebClient.styles.css" asp-append-version="true" />
+
 </head>
-<body>
+<body data-api-base="@apiBaseUrl" data-token="@accessToken">
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container">
                 <a class="navbar-brand font-weight-bold text-primary" asp-area="" asp-page="/Storefront/Index">Laptop Shop</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+
+                <div class="collapse navbar-collapse" id="mainNavbar">
+                    <!-- Left nav -->
+                    <ul class="navbar-nav me-auto mb-2 mb-sm-0">
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-page="/Storefront/Index">Cửa hàng</a>
                         </li>
@@ -27,22 +37,40 @@
                             @if (User.IsInRole("Admin") || User.IsInRole("Staff"))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark font-weight-bold" asp-page="/Admin/Laptops/Index">Quản lý Laptop</a>
+                                    <a class="nav-link text-dark fw-bold" asp-page="/Admin/Laptops/Index">Quản lý Laptop</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-page="/Admin/Index">Bảng điều khiển</a>
                                 </li>
                             }
-                            <li class="nav-item ms-auto d-flex align-items-center">
+                        }
+                    </ul>
+
+                    <!-- Right nav -->
+                    <ul class="navbar-nav ms-auto mb-2 mb-sm-0 align-items-center">
+                        <li class="nav-item">
+                            <a class="nav-link position-relative" asp-page="/Storefront/Cart">
+                                <i class="bi bi-cart-fill"></i> Giỏ hàng
+                                <span id="cartCount" class="badge bg-danger rounded-pill ms-2">0</span>
+                            </a>
+                        </li>
+                        @if (User.Identity != null && User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-page="/Storefront/OrderHistory">Đơn hàng</a>
+                            </li>
+                            <li class="nav-item d-flex align-items-center">
                                 <span class="text-secondary me-3">Xin chào, <strong>@User.FindFirst("FullName")?.Value</strong> (@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value)</span>
                             </li>
                             <li class="nav-item">
-                                <a class="btn btn-outline-danger btn-sm" asp-page="/Auth/Login" asp-page-handler="Logout">Đăng xuất</a>
+                                <form method="post" asp-page="/Auth/Logout" class="m-0">
+                                    <button class="btn btn-outline-danger btn-sm" type="submit">Đăng xuất</button>
+                                </form>
                             </li>
                         }
                         else
                         {
-                            <li class="nav-item ms-auto">
+                            <li class="nav-item">
                                 <a class="nav-link text-dark" asp-page="/Auth/CustomerLogin">Đăng nhập</a>
                             </li>
                             <li class="nav-item">
@@ -72,7 +100,20 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="~/js/cart.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        // Update cart badge on every page load if cart.js is available
+        (async function(){
+            try{
+                if (typeof getCartCount === 'function'){
+                    const count = await getCartCount();
+                    document.getElementById('cartCount')?.innerText = count || 0;
+                }
+            }catch(e){ console.error(e); }
+        })();
+    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

@@ -39,7 +39,7 @@ namespace WebClient.Pages.Auth
 
             if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Customer"))
             {
-                Response.Redirect("/Index");
+                Response.Redirect("/Storefront/Index");
             }
         }
 
@@ -65,7 +65,7 @@ namespace WebClient.Pages.Auth
                     var claims = new List<Claim>
                     {
                         new Claim(ClaimTypes.Name, Username),
-                        new Claim(ClaimTypes.Role, result.Role), // S? là "Customer"
+                        new Claim(ClaimTypes.Role, result.Role),
                         new Claim("FullName", result.FullName),
                         new Claim("AccessToken", result.Token)
                     };
@@ -75,7 +75,7 @@ namespace WebClient.Pages.Auth
 
                     await HttpContext.SignInAsync("MyCookieAuth", new ClaimsPrincipal(claimsIdentity), authProperties);
 
-                    return LocalRedirect(ReturnUrl ?? "/Index");
+                    return LocalRedirect(ReturnUrl ?? "/Storefront/Index");
                 }
             }
 
