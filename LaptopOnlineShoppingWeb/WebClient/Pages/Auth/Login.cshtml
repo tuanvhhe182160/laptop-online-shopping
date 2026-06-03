@@ -44,16 +44,19 @@
             </div>
         }
 
-        <form method="post">
-            <input type="hidden" asp-for="ReturnUrl" />
+        <form method="post" action="">
+            <input type="hidden" id="ReturnUrl" name="ReturnUrl" value="" />
+
             <div class="mb-3">
-                <label class="form-label fw-semibold">Tên đăng nhập</label>
-                <input type="text" asp-for="Username" class="form-control form-control-lg" placeholder="Nhập username..." required />
+                <label for="Username" class="form-label fw-semibold">Tên đăng nhập</label>
+                <input type="text" id="Username" name="Username" class="form-control form-control-lg" placeholder="Nhập username..." required />
             </div>
+
             <div class="mb-4">
-                <label class="form-label fw-semibold">Mật khẩu</label>
-                <input type="password" asp-for="Password" class="form-control form-control-lg" placeholder="Nhập mật khẩu..." required />
+                <label for="Password" class="form-label fw-semibold">Mật khẩu</label>
+                <input type="password" id="Password" name="Password" class="form-control form-control-lg" placeholder="Nhập mật khẩu..." required />
             </div>
+
             <button type="submit" class="btn btn-dark w-100 btn-lg">Đăng nhập</button>
 
             <div class="text-center mt-3">

@@ -1,14 +1,13 @@
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Collections.Generic;
-using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text.Json;
-using System.Threading.Tasks;
 using WebClient.Models;
-using System.Security.Claims;
 
 namespace WebClient.Pages.Storefront
 {
+    [Authorize(Roles = "Customer")]
     public class OrderHistoryModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;
@@ -22,17 +21,26 @@ namespace WebClient.Pages.Storefront
 
         public async Task<IActionResult> OnGetAsync()
         {
-            var customerIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            int customerId = int.TryParse(customerIdStr, out int id) ? id : 1; 
-
             var client = _httpClientFactory.CreateClient("WebAPI");
-            var response = await client.GetAsync($"/api/orders/customer/{customerId}");
+
+            var token = User.FindFirst("AccessToken")?.Value;
+            if (!string.IsNullOrEmpty(token))
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
+
+            var response = await client.GetAsync("/api/Orders/my-orders");
 
             if (response.IsSuccessStatusCode)
             {
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                 var list = await JsonSerializer.DeserializeAsync<List<OrderViewModel>>(await response.Content.ReadAsStreamAsync(), options);
                 if (list != null) Orders = list;
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                // Nếu Token hết hạn hoặc bị lỗi, đá văng ra trang Login
+                return RedirectToPage("/Auth/CustomerLogin");
             }
 
             return Page();

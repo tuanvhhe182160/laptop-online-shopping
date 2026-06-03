@@ -1,12 +1,14 @@
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using WebAPI.DTOs;
 using WebAPI.Services;
 
 namespace WebAPI.Controllers
 {
-    [Route("api/customers/{customerId}/cart")]
+    [Route("api/Cart")]
     [ApiController]
+    [Authorize(Roles = "Customer")]
     public class CartsController : ControllerBase
     {
         private readonly ICartService _service;
@@ -16,33 +18,43 @@ namespace WebAPI.Controllers
             _service = service;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetCart(int customerId)
+        private int GetCurrentCustomerId()
         {
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.Parse(userIdStr!);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCart()
+        {
+            int customerId = GetCurrentCustomerId();
             var cart = await _service.GetCartAsync(customerId);
             if (cart == null) return NotFound("Giỏ hàng không tồn tại.");
             return Ok(cart);
         }
 
         [HttpPost("items")]
-        public async Task<IActionResult> AddToCart(int customerId, [FromBody] AddToCartRequestDTO dto)
+        public async Task<IActionResult> AddToCart([FromBody] AddToCartRequestDTO dto)
         {
+            int customerId = GetCurrentCustomerId();
             var result = await _service.AddToCartAsync(customerId, dto);
             if (!result) return BadRequest("Thêm vào giỏ hàng thất bại. Vượt quá tồn kho hoặc sai thông tin.");
             return Ok();
         }
 
         [HttpPut("items")]
-        public async Task<IActionResult> UpdateCartItem(int customerId, [FromBody] UpdateCartItemDTO dto)
+        public async Task<IActionResult> UpdateCartItem([FromBody] UpdateCartItemDTO dto)
         {
+            int customerId = GetCurrentCustomerId();
             var result = await _service.UpdateCartItemAsync(customerId, dto);
             if (!result) return BadRequest("Cập nhật thất bại.");
             return Ok();
         }
 
         [HttpDelete("items/{laptopId}")]
-        public async Task<IActionResult> RemoveFromCart(int customerId, int laptopId)
+        public async Task<IActionResult> RemoveFromCart(int laptopId)
         {
+            int customerId = GetCurrentCustomerId();
             var result = await _service.RemoveFromCartAsync(customerId, laptopId);
             if (!result) return NotFound();
             return Ok();

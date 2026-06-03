@@ -2,7 +2,7 @@
 @model WebClient.Pages.Auth.CustomerRegisterModel
 @{
     ViewData["Title"] = "Đăng ký tài khoản Khách hàng";
-    Layout = "_Layout"; // Dùng layout chung của Storefront do Member 3 thiết kế sau
+    Layout = "_Layout"; 
 }
 
 <div class="container mt-5">
@@ -17,25 +17,29 @@
                         <div class="alert alert-danger">@Model.ErrorMessage</div>
                     }
 
-                    <form method="post">
-                        <div class="mb-3">
-                            <label class="form-label">Họ và Tên</label>
-                            <input type="text" asp-for="FullName" class="form-control" required />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Email</label>
-                            <input type="email" asp-for="Email" class="form-control" required />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Tên đăng nhập</label>
-                            <input type="text" asp-for="Username" class="form-control" required />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Mật khẩu</label>
-                            <input type="password" asp-for="Password" class="form-control" required minlength="6" />
-                        </div>
-                        <button type="submit" class="btn btn-dark w-100">Đăng ký ngay</button>
-                    </form>
+                        <form method="post" action="">
+                            <div class="mb-3">
+                                <label for="FullName" class="form-label">Họ và Tên</label>
+                                <input type="text" id="FullName" name="FullName" class="form-control" required />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="Email" class="form-label">Email</label>
+                                <input type="email" id="Email" name="Email" class="form-control" required />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="Username" class="form-label">Tên đăng nhập</label>
+                                <input type="text" id="Username" name="Username" class="form-control" required />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="Password" class="form-label">Mật khẩu</label>
+                                <input type="password" id="Password" name="Password" class="form-control" required minlength="6" />
+                            </div>
+
+                            <button type="submit" class="btn btn-dark w-100">Đăng ký ngay</button>
+                        </form>
 
                     <div class="text-center mt-3">
                         <span class="text-muted">Đã có tài khoản?</span>

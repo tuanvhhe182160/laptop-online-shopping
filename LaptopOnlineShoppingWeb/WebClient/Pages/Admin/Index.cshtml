@@ -1,4 +1,28 @@
 ﻿@page
 @model WebClient.Pages.Admin.IndexModel
 @{
+    ViewData["Title"] = "Dashboard";
+    Layout = "_AdminLayout";
 }
+
+<div class="container-fluid mt-4">
+    <h2 class="fw-bold mb-4">Tổng quan hệ thống</h2>
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary mb-3 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Đơn hàng mới</h5>
+                    <p class="card-text fs-2 fw-bold">0</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success mb-3 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Doanh thu tháng</h5>
+                    <p class="card-text fs-2 fw-bold">0 ₫</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

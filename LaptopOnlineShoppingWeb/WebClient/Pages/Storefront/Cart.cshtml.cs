@@ -1,13 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text.Json;
-using System.Threading.Tasks;
 using WebClient.Models;
-using System.Security.Claims;
 
 namespace WebClient.Pages.Storefront
 {
+    [Authorize(Roles = "Customer")]
     public class CartModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;
@@ -21,21 +21,26 @@ namespace WebClient.Pages.Storefront
 
         public async Task<IActionResult> OnGetAsync()
         {
-            // Lấy ID Khách hàng từ Cookie
-            var customerIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!int.TryParse(customerIdStr, out int customerId))
+            var client = _httpClientFactory.CreateClient("WebAPI");
+
+            // Lấy token từ Cookie
+            var token = User.FindFirst("AccessToken")?.Value;
+            if (!string.IsNullOrEmpty(token))
             {
-                // Nếu chưa đăng nhập, giả sử 1 cho mục đích test
-                customerId = 1; 
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             }
 
-            var client = _httpClientFactory.CreateClient("WebAPI");
-            var response = await client.GetAsync($"/api/customers/{customerId}/cart");
+            var response = await client.GetAsync("/api/Cart");
 
             if (response.IsSuccessStatusCode)
             {
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                 Cart = await JsonSerializer.DeserializeAsync<CartViewModel>(await response.Content.ReadAsStreamAsync(), options);
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                // Nếu gọi API thất bại do Token hết hạn/lỗi, đẩy về trang Login
+                return RedirectToPage("/Auth/CustomerLogin");
             }
 
             return Page();

@@ -1,5 +1,4 @@
-using System;
-using System.Collections.Generic;
+using WebAPI.Enums;
 
 namespace WebClient.Models
 {
@@ -12,7 +11,7 @@ namespace WebClient.Models
         public decimal TotalAmount { get; set; }
         public string PaymentMethod { get; set; } = null!;
         public bool? PaymentStatus { get; set; }
-        public string? OrderStatus { get; set; }
+        public OrderStatus OrderStatus { get; set; }
     }
 
     public class OrderDetailViewModel

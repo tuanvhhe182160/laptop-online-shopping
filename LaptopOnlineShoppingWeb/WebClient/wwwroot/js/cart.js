@@ -1,63 +1,82 @@
-const API_BASE = "https://localhost:7196/api"; // Thay đổi port theo thực tế của WebAPI
+// Đọc cấu hình từ thẻ body
+const API_BASE = 'https://localhost:7136';
+const TOKEN = document.body.getAttribute('data-token');
 
-// Giả sử customerId được lưu trong cookie/session. Ở đây mock là 1.
-const customerId = 1;
+// Hàm tạo Header có chứa Token bảo mật
+function getHeaders() {
+    const headers = { 'Content-Type': 'application/json' };
+    if (TOKEN) {
+        headers['Authorization'] = `Bearer ${TOKEN}`;
+    }
+    return headers;
+}
 
 async function addToCart(laptopId, quantity) {
     const payload = { laptopId, quantity };
     try {
-        const response = await fetch(`${API_BASE}/customers/${customerId}/cart/items`, {
+        const response = await fetch(`${API_BASE}/api/Cart/items`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getHeaders(),
             body: JSON.stringify(payload)
         });
-        if (response.ok) {
-            alert("Đã thêm vào giỏ hàng");
-        } else {
-            const err = await response.text();
-            alert("Lỗi: " + err);
-        }
+
+        if (response.status === 401) return { ok: false, message: 'NOT_AUTHENTICATED' };
+        if (response.ok) return { ok: true };
+
+        const err = await response.text();
+        return { ok: false, message: err };
     } catch (e) {
         console.error(e);
-        alert("Có lỗi xảy ra khi gọi API");
+        return { ok: false, message: 'Không thể kết nối đến máy chủ API.' };
     }
 }
 
 async function updateCart(laptopId, quantity) {
-    if (quantity <= 0) {
-        alert("Số lượng phải lớn hơn 0");
-        return;
-    }
+    if (quantity <= 0) { alert('Số lượng phải lớn hơn 0'); return; }
     const payload = { laptopId, quantity: parseInt(quantity) };
+
     try {
-        const response = await fetch(`${API_BASE}/customers/${customerId}/cart/items`, {
+        const response = await fetch(`${API_BASE}/Cart/items`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getHeaders(), // Đính kèm Token
             body: JSON.stringify(payload)
         });
-        if (response.ok) {
-            location.reload();
-        } else {
-            alert("Cập nhật thất bại. Có thể vượt quá tồn kho.");
-            location.reload();
-        }
-    } catch (e) {
-        console.error(e);
-    }
+
+        if (response.status === 401) { alert('Vui lòng đăng nhập để chỉnh sửa giỏ hàng'); return; }
+        if (response.ok) { location.reload(); }
+        else { alert('Cập nhật thất bại. Có thể vượt quá tồn kho.'); location.reload(); }
+    } catch (e) { console.error(e); }
 }
 
 async function removeFromCart(laptopId) {
-    if (!confirm("Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?")) return;
+    if (!confirm('Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?')) return;
     try {
-        const response = await fetch(`${API_BASE}/customers/${customerId}/cart/items/${laptopId}`, {
-            method: 'DELETE'
+        const response = await fetch(`${API_BASE}/Cart/items/${laptopId}`, {
+            method: 'DELETE',
+            headers: getHeaders() // Đính kèm Token
         });
-        if (response.ok) {
-            location.reload();
-        } else {
-            alert("Xóa thất bại");
-        }
+
+        if (response.status === 401) { alert('Vui lòng đăng nhập để xóa sản phẩm'); return; }
+        if (response.ok) { location.reload(); } else { alert('Xóa thất bại'); }
+    } catch (e) { console.error(e); }
+}
+
+async function getCartCount() {
+    if (!TOKEN) return 0; // Nếu không có token thì khỏi gọi API cho tốn tài nguyên
+    try {
+        const response = await fetch(`${API_BASE}/Cart`, {
+            headers: getHeaders()
+        });
+
+        if (!response.ok) return 0;
+        const cart = await response.json();
+
+        if (!cart) return 0;
+        if (Array.isArray(cart.items)) return cart.items.reduce((s, it) => s + (it.quantity || 0), 0);
+        if (typeof cart.totalQuantity === 'number') return cart.totalQuantity;
+        return 0;
     } catch (e) {
         console.error(e);
+        return 0;
     }
 }

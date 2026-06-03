@@ -1,13 +1,14 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Net.Http;
-using System.Text.Json;
-using System.Threading.Tasks;
-using WebClient.Models;
+using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Text.Json;
+using WebClient.Models;
 
 namespace WebClient.Pages.Storefront
 {
+    [Authorize(Roles = "Customer")]
     public class CheckoutModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;
@@ -26,19 +27,20 @@ namespace WebClient.Pages.Storefront
 
         public async Task<IActionResult> OnGetAsync([FromQuery] bool buynow = false, [FromQuery] int laptopid = 0, [FromQuery] int qty = 0)
         {
-            var customerIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            int customerId = int.TryParse(customerIdStr, out int id) ? id : 1; // Test mock
-
             IsBuyNow = buynow;
             LaptopId = laptopid;
             Quantity = qty;
 
             var client = _httpClientFactory.CreateClient("WebAPI");
 
+            var token = User.FindFirst("AccessToken")?.Value;
+            if (!string.IsNullOrEmpty(token))
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
+
             if (IsBuyNow && LaptopId > 0 && Quantity > 0)
             {
-                // Gọi API lấy thông tin laptop nếu cần, hoặc tạo mockup
-                // Ở đây mô phỏng lấy tên giá từ API (giả sử có api/laptops)
                 var response = await client.GetAsync($"/api/laptops/{LaptopId}");
                 if (response.IsSuccessStatusCode)
                 {
@@ -60,7 +62,7 @@ namespace WebClient.Pages.Storefront
             else
             {
                 // Checkout từ Giỏ hàng
-                var response = await client.GetAsync($"/api/customers/{customerId}/cart");
+                var response = await client.GetAsync("/api/Cart");
                 if (response.IsSuccessStatusCode)
                 {
                     var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };

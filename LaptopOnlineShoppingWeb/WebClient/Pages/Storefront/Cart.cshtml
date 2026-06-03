@@ -26,14 +26,16 @@
                 @foreach (var item in Model.Cart.Items)
                 {
                     <tr>
-                        <td>@item.LaptopName</td>
+                        <td class="fw-bold">@item.LaptopName</td>
                         <td>@item.UnitPrice.ToString("N0") VNĐ</td>
                         <td>
-                            <input type="number" class="form-control" style="width: 80px" value="@item.Quantity" onchange="updateCart(@item.LaptopId, this.value)" />
+                            <input type="number" class="form-control text-center" style="width: 80px"
+                                   value="@item.Quantity"
+                                   onchange="updateCart('@item.LaptopId', this.value)" />
                         </td>
-                        <td>@item.TotalPrice.ToString("N0") VNĐ</td>
+                        <td class="text-danger fw-bold">@item.TotalPrice.ToString("N0") VNĐ</td>
                         <td>
-                            <button class="btn btn-danger btn-sm" onclick="removeFromCart(@item.LaptopId)">Xóa</button>
+                            <button class="btn btn-danger btn-sm" onclick="removeFromCart('@item.LaptopId')">Xóa</button>
                         </td>
                     </tr>
                 }
