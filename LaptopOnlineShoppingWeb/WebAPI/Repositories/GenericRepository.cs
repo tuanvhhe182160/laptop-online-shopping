@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 using WebAPI.Data;
 
 namespace WebAPI.Repositories
@@ -47,6 +48,16 @@ namespace WebAPI.Repositories
         public async Task SaveAsync()
         {
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<T?> FindAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _dbSet.FirstOrDefaultAsync(predicate);
+        }
+
+        public IQueryable<T> GetQueryable()
+        {
+            return _dbSet.AsQueryable();
         }
     }
 }

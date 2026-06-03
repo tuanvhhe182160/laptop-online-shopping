@@ -1,0 +1,46 @@
+@page
+@model WebClient.Pages.BackOffice.Customers.IndexModel
+@{
+    ViewData["Title"] = "Quản lý Khách hàng";
+}
+
+<div class="container mt-4">
+    <h2>Danh sách Khách hàng</h2>
+
+    <table class="table table-striped table-bordered mt-3">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Họ tên</th>
+                <th>Email</th>
+                <th>SĐT</th>
+                <th>Địa chỉ</th>
+                <th>Trạng thái</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in Model.Customers)
+            {
+                <tr>
+                    <td>@c.CustomerId</td>
+                    <td>@c.Username</td>
+                    <td>@c.FullName</td>
+                    <td>@c.Email</td>
+                    <td>@c.Phone</td>
+                    <td>@c.Address</td>
+                    <td>
+                        @if (c.IsActive == true)
+                        {
+                            <span class="badge bg-success">Hoạt động</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">Khóa</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

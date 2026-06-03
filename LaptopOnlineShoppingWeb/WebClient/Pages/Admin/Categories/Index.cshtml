@@ -1,4 +1,163 @@
 ﻿@page
 @model WebClient.Pages.Admin.Categories.IndexModel
 @{
+    ViewData["Title"] = "Quản lý Danh mục Hãng";
+    Layout = "_AdminLayout";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold text-dark m-0">Danh mục các Hãng Laptop</h3>
+        <button class="btn btn-primary shadow-sm" onclick="openModalForCreate()">
+            <i class="bi bi-plus-circle me-1"></i> Thêm Hãng Mới
+        </button>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-center">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" asp-for="SearchName" class="form-control border-start-0"
+                               placeholder="Tìm kiếm tương đối theo tên hãng (Ví dụ: Asus, Dell...)" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-dark px-4">Tìm kiếm</button>
+                    @if (!string.IsNullOrEmpty(Model.SearchName))
+                    {
+                        <a href="/Admin/Categories/Index" class="btn btn-link text-secondary text-decoration-none">Xóa bộ lọc</a>
+                    }
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle m-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4" style="width: 15%">Mã Hãng</th>
+                            <th style="width: 30%">Tên Hãng</th>
+                            <th style="width: 35%">Mô tả chi tiết</th>
+                            <th class="text-end pe-4" style="width: 20%">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Categories == null || !Model.Categories.Any())
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">Không tìm thấy danh mục hãng nào.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var item in Model.Categories)
+                            {
+                                <tr>
+                                    <td class="ps-4 text-secondary">#@item.CategoryId</td>
+                                    <td class="fw-bold text-dark">@item.CategoryName</td>
+                                    <td class="text-muted">@item.Description</td>
+                                    <td class="text-end pe-4">
+                                        <button class="btn btn-sm btn-outline-primary me-1"
+                                                onclick="openModalForEdit('@item.CategoryId', '@item.CategoryName', '@item.Description')">
+                                            <i class="bi bi-pencil-square"></i> Sửa
+                                        </button>
+
+                                        @if (User.IsInRole("Admin"))
+                                        {
+                                            <form method="post" asp-page-handler="Delete" asp-route-id="@item.CategoryId"
+                                                  class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa hãng này không? Thao tác này không thể hoàn tác.');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash"></i> Xóa
+                                                </button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="categoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title fw-bold" id="modalTitle">Thêm danh mục Hãng</h5>
+                <button type="button" class="btn-close" data-bs-toggle="modal" data-bs-target="#categoryModal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page-handler="Save">
+                <input type="hidden" id="formCategoryId" asp-for="CategoryForm.CategoryId" />
+
+                <div class="modal-body py-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tên hãng sản xuất <span class="text-danger">*</span></label>
+                        <input type="text" id="formCategoryName" asp-for="CategoryForm.CategoryName" class="form-control" placeholder="Ví dụ: ASUS, Dell, HP..." required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Mô tả tóm tắt</label>
+                        <textarea id="formDescription" asp-for="CategoryForm.Description" class="form-control" rows="3" placeholder="Nhập một vài mô tả sơ lược về hãng..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-success px-4" id="btnSubmit">Lưu lại</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var bootstrapModal;
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Khởi tạo đối tượng Modal Bootstrap 5
+            bootstrapModal = new bootstrap.Modal(document.getElementById('categoryModal'));
+        });
+
+        function openModalForCreate() {
+            document.getElementById('modalTitle').innerText = "Thêm danh mục Hãng mới";
+            document.getElementById('formCategoryId').value = 0;
+            document.getElementById('formCategoryName').value = "";
+            document.getElementById('formDescription').value = "";
+            document.getElementById('btnSubmit').className = "btn btn-success px-4";
+            bootstrapModal.show();
+        }
+
+        function openModalForEdit(id, name, desc) {
+            document.getElementById('modalTitle').innerText = "Chỉnh sửa thông tin Hãng";
+            document.getElementById('formCategoryId').value = id;
+            document.getElementById('formCategoryName').value = name;
+            document.getElementById('formDescription').value = desc;
+            document.getElementById('btnSubmit').className = "btn btn-primary px-4";
+            bootstrapModal.show();
+        }
+    </script>
 }

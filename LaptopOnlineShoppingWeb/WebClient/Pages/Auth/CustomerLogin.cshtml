@@ -1,0 +1,47 @@
+﻿@page
+@model WebClient.Pages.Auth.CustomerLoginModel
+@{
+    ViewData["Title"] = "Đăng nhập Khách hàng";
+    Layout = "_Layout";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h3 class="text-center mb-4">Đăng nhập</h3>
+
+                    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+                    {
+                        <div class="alert alert-success">@Model.SuccessMessage</div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <div class="alert alert-danger">@Model.ErrorMessage</div>
+                    }
+
+                    <form method="post" action="">
+                        <input type="hidden" id="ReturnUrl" name="ReturnUrl" value="" />
+
+                        <div class="mb-3">
+                            <label for="Username" class="form-label">Tên đăng nhập</label>
+                            <input type="text" id="Username" name="Username" class="form-control" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="Password" class="form-label">Mật khẩu</label>
+                            <input type="password" id="Password" name="Password" class="form-control" required />
+                        </div>
+
+                        <button type="submit" class="btn btn-dark w-100">Đăng nhập</button>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <a href="/Auth/CustomerRegister" class="text-decoration-none">Chưa có tài khoản? Đăng ký ngay</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
