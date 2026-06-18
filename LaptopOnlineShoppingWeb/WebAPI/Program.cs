@@ -3,10 +3,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OData.ModelBuilder;
 using System.Text;
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.OData;
-using Microsoft.OData.ModelBuilder;
 using WebAPI.Data;
 using WebAPI.Entities;
 using WebAPI.Repositories;
@@ -36,6 +35,7 @@ namespace WebAPI
             builder.Services.AddScoped<ICustomerService, CustomerService>();
             builder.Services.AddScoped<ICartService, CartService>();
             builder.Services.AddScoped<IOrderService, OrderService>();
+            builder.Services.AddScoped<IEmailService, EmailService>();
 
             //Add singleton pattern
             builder.Services.AddSingleton<SystemConfigService>();
