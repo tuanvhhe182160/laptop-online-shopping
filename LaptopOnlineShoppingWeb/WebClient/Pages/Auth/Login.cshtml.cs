@@ -32,7 +32,7 @@ namespace WebClient.Pages.Auth
         {
             if(User.Identity != null && User.Identity.IsAuthenticated && (User.IsInRole("Admin") || User.IsInRole("Staff")))
             {
-                Response.Redirect("/Admin/Index");
+                Response.Redirect("/Storefront/Index");
             }
         }
 
@@ -78,7 +78,7 @@ namespace WebClient.Pages.Auth
                     };
 
                     await HttpContext.SignInAsync("MyCookieAuth", new ClaimsPrincipal(claimsIdentity), authProperties);
-                    return LocalRedirect(ReturnUrl ?? "/Admin/Index");
+                    return LocalRedirect(ReturnUrl ?? "/Storefront/Index");
                 }
             }
             try

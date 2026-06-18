@@ -52,7 +52,7 @@ namespace WebClient.Pages.Auth
 
             var client = _httpClientFactory.CreateClient("WebAPI");
 
-            // G?i endpoint dành riêng cho Khách hàng
+            // Gọi endpoint dành riêng cho Khách hàng
             var response = await client.PostAsync("api/auth/customer-login", content);
             var responseData = await response.Content.ReadAsStringAsync();
 
