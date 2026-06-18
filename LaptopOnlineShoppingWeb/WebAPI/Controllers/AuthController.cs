@@ -29,9 +29,10 @@ namespace WebAPI.Controllers
             var adminUser = _configuration["AdminAccount:Username"];
             var adminPass = _configuration["AdminAccount:Password"];
 
+            // 1. Check Hardcoded Admin
             if (request.Username == adminUser && request.Password == adminPass)
             {
-                var adminToken = GenerateJwtToken("0", adminUser!, "Admin", _configuration["AdminAccount:FullName"]!, null);
+                var adminToken = GenerateJwtToken("0", adminUser!, "Admin", _configuration["AdminAccount:FullName"]!, null, null);
                 return Ok(new LoginResponse
                 {
                     Token = adminToken,
@@ -41,6 +42,7 @@ namespace WebAPI.Controllers
                 });
             }
 
+            // 2. Check DB Users
             var user = await _context.Users
                 .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Username == request.Username && u.IsActive == true);
@@ -50,7 +52,8 @@ namespace WebAPI.Controllers
             bool isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
             if (!isPasswordValid) return Unauthorized(new { message = "Mật khẩu không chính xác." });
 
-            var token = GenerateJwtToken(user.UserId.ToString(), user.Username, user.Role.RoleName, user.FullName, user.AvatarUrl);
+            // Truyền BranchId vào Token
+            var token = GenerateJwtToken(user.UserId.ToString(), user.Username, user.Role.RoleName, user.FullName, user.AvatarUrl, user.BranchId);
 
             return Ok(new LoginResponse
             {
@@ -107,20 +110,21 @@ namespace WebAPI.Controllers
                 return Unauthorized(new { message = "Sai mật khẩu." });
             }
 
-            var token = GenerateJwtToken(customer.CustomerId.ToString(), customer.Username, "Customer", customer.FullName, null);
+            // Customer không thuộc chi nhánh nào nên truyền BranchId = null
+            var token = GenerateJwtToken(customer.CustomerId.ToString(), customer.Username, "Customer", customer.FullName, customer.AvatarUrl, null);
 
             return Ok(new LoginResponse
             {
                 Token = token,
                 FullName = customer.FullName,
                 Role = "Customer",
-                AvatarUrl = ""
+                AvatarUrl = customer.AvatarUrl ?? ""
             });
         }
 
-        private string GenerateJwtToken(string id, string username, string role, string fullName, string? avatarUrl)
+        private string GenerateJwtToken(string id, string username, string role, string fullName, string? avatarUrl, int? branchId)
         {
-            var claims = new[]
+            var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, id),
                 new Claim(ClaimTypes.Name, username),
@@ -128,6 +132,16 @@ namespace WebAPI.Controllers
                 new Claim("FullName", fullName),
                 new Claim("AvatarUrl", avatarUrl ?? "")
             };
+
+            if (branchId.HasValue)
+            {
+                claims.Add(new Claim("BranchId", branchId.Value.ToString()));
+            }
+            else
+            {
+                // Quy ước: BranchId = 0 là không bị giới hạn chi nhánh (Dành cho Admin tổng hoặc Customer)
+                claims.Add(new Claim("BranchId", "0"));
+            }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

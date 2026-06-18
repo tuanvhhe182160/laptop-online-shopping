@@ -17,6 +17,7 @@ namespace WebAPI.Repositories
         {
             return await _context.Users
                 .Include(u => u.Role)
+                .Include(u => u.Branch)
                 .AsNoTracking()
                 .ToListAsync();
         }

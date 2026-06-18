@@ -14,6 +14,7 @@ namespace WebAPI.DTOs.User
         public string Email { get; set; } = string.Empty;
         [Required] 
         public int RoleId { get; set; }
+        public int? BranchId { get; set; }
         public bool IsActive { get; set; } = true;
     }
 }
