@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Google.Apis.Auth;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -220,6 +221,142 @@ namespace WebAPI.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Đặt lại mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới." });
+        }
+
+        [HttpPost("staff-google-login")]
+        public async Task<IActionResult> StaffGoogleLogin([FromBody] GoogleLoginRequest request)
+        {
+            try
+            {
+                // 1. Nhờ thư viện Google xác thực cái IdToken này xem có bị làm giả không
+                var settings = new GoogleJsonWebSignature.ValidationSettings()
+                {
+                    Audience = new List<string>() { _configuration["Google:ClientId"]! }
+                };
+
+                // Payload chứa toàn bộ thông tin thật của Google trả về (Email, Tên, Ảnh đại diện...)
+                var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
+
+                // 2. Đối chiếu Email Google với DB của hệ thống
+                var user = await _context.Users
+                    .Include(u => u.Role)
+                    .FirstOrDefaultAsync(u => u.Email == payload.Email && u.IsActive == true);
+
+                // LUẬT THÉP: Email chưa được Admin tạo trong DB thì không cho vào!
+                if (user == null)
+                {
+                    return Unauthorized(new { message = "Email này chưa được Admin cấp quyền truy cập hệ thống nội bộ." });
+                }
+
+                // 3. (Tùy chọn) Cập nhật lại Avatar hoặc Tên nếu Google có đổi
+                bool isUpdated = false;
+                if (string.IsNullOrEmpty(user.AvatarUrl) && !string.IsNullOrEmpty(payload.Picture))
+                {
+                    user.AvatarUrl = payload.Picture;
+                    isUpdated = true;
+                }
+                if (isUpdated) await _context.SaveChangesAsync();
+
+                // 4. Sinh JWT Token của hệ thống mình và trả về (y chang lúc login bằng mật khẩu)
+                var token = GenerateJwtToken(
+                    user.UserId.ToString(),
+                    user.Username,
+                    user.Role.RoleName,
+                    user.FullName,
+                    user.AvatarUrl,
+                    user.BranchId
+                );
+
+                return Ok(new LoginResponse
+                {
+                    Token = token,
+                    FullName = user.FullName,
+                    Role = user.Role.RoleName,
+                    AvatarUrl = user.AvatarUrl ?? ""
+                });
+            }
+            catch (InvalidJwtException)
+            {
+                // Bắt lỗi nếu Token Google bị fake hoặc hết hạn
+                return BadRequest(new { message = "Mã xác thực Google không hợp lệ hoặc đã hết hạn." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi hệ thống: " + ex.Message });
+            }
+        }
+
+        [HttpPost("customer-google-login")]
+        public async Task<IActionResult> CustomerGoogleLogin([FromBody] GoogleLoginRequest request)
+        {
+            try
+            {
+                // 1. Nhờ thư viện Google xác thực cái IdToken này xem có bị làm giả không
+                var settings = new GoogleJsonWebSignature.ValidationSettings()
+                {
+                    Audience = new List<string>() { _configuration["Google:ClientId"]! }
+                };
+
+                // Payload chứa toàn bộ thông tin thật của Google trả về (Email, Tên, Ảnh đại diện...)
+                var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
+
+                // 2. Đối chiếu Email Google với DB của hệ thống (Bảng Customers)
+                var customer = await _context.Customers
+                    .FirstOrDefaultAsync(c => c.Email == payload.Email && c.IsActive == true);
+
+                // Nếu không tìm thấy Customer, tiến hành tạo mới tự động (Auto-Registration)
+                if (customer == null)
+                {
+                    customer = new Customer
+                    {
+                        Email = payload.Email,
+                        FullName = payload.Name, // Hoặc thuộc tính tương ứng trong Model của bạn (ví dụ: Name)
+                        AvatarUrl = payload.Picture, // Hoặc thuộc tính lưu ảnh đại diện (ví dụ: Picture)
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()), // Gán pass rác đã hash
+                        IsActive = true,
+                    };
+
+                    // Lưu vào Database
+                    _context.Customers.Add(customer);
+                    await _context.SaveChangesAsync();
+                }
+
+                // 3. (Tùy chọn) Cập nhật lại Avatar hoặc Tên nếu Google có đổi
+                bool isUpdated = false;
+                if (string.IsNullOrEmpty(customer.AvatarUrl) && !string.IsNullOrEmpty(payload.Picture))
+                {
+                    customer.AvatarUrl = payload.Picture;
+                    isUpdated = true;
+                }
+                if (isUpdated) await _context.SaveChangesAsync();
+
+                // 4. Sinh JWT Token của hệ thống mình và trả về (y chang lúc login bằng mật khẩu)
+                var token = GenerateJwtToken(
+                    customer.CustomerId.ToString(),
+                    customer.Email,
+                    "Customer",
+                    customer.FullName,
+                    customer.AvatarUrl,
+                    null
+                );
+
+                return Ok(new LoginResponse
+                {
+                    Token = token,
+                    FullName = customer.FullName,
+                    Role = "Customer",
+                    AvatarUrl = customer.AvatarUrl ?? ""
+                });
+            }
+            catch (InvalidJwtException)
+            {
+                // Bắt lỗi nếu Token Google bị fake hoặc hết hạn
+                return BadRequest(new { message = "Mã xác thực Google không hợp lệ hoặc đã hết hạn." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi hệ thống: " + ex.Message });
+            }
         }
     }
 }
