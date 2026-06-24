@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace WebAPI.Entities;
+﻿namespace WebAPI.Entities;
 
 public partial class Order
 {
