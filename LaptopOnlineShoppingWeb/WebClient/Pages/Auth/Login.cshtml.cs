@@ -10,11 +10,14 @@ namespace WebClient.Pages.Auth
 {
     public class LoginModel : PageModel
     {
+        public string GoogleClientId { get; set; }
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
 
-        public LoginModel(IHttpClientFactory httpClientFactory)
+        public LoginModel(IHttpClientFactory httpClientFactory, IConfiguration configuration)
         {
             _httpClientFactory = httpClientFactory;
+            _configuration = configuration;
         }
 
         [BindProperty]
@@ -30,6 +33,8 @@ namespace WebClient.Pages.Auth
 
         public void OnGet()
         {
+            GoogleClientId = _configuration["Google:ClientId"];
+
             if (User.Identity != null && User.Identity.IsAuthenticated)
             {
                 if (User.IsInRole("Admin"))
