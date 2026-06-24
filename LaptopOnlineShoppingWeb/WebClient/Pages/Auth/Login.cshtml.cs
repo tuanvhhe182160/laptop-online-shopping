@@ -30,15 +30,32 @@ namespace WebClient.Pages.Auth
 
         public void OnGet()
         {
-            if(User.Identity != null && User.Identity.IsAuthenticated && (User.IsInRole("Admin") || User.IsInRole("Staff")))
+            if (User.Identity != null && User.Identity.IsAuthenticated)
             {
-                Response.Redirect("/Storefront/Index");
+                if (User.IsInRole("Admin"))
+                {
+                    Response.Redirect("/admin/dashboard");
+                }
+                else if (User.IsInRole("Staff"))
+                {
+                    Response.Redirect("/admin/orders"); // Địa bàn của Staff: Quản lý đơn hàng
+                }
+                else if (User.IsInRole("WarehouseManager"))
+                {
+                    Response.Redirect("/admin/warehouse"); // Địa bàn của Manager: Quản lý kho nhập seri
+                }
+                else
+                {
+                    Response.Redirect("/Storefront/Index");
+                }
             }
         }
 
         public async Task<IActionResult> OnGetLogoutAsync()
         {
             await HttpContext.SignOutAsync("MyCookieAuth");
+            // Xóa luôn token trong localStorage của JS khi Logout
+            Response.Cookies.Delete("AccessToken");
             return RedirectToPage("/Auth/Login");
         }
 
@@ -66,19 +83,40 @@ namespace WebClient.Pages.Auth
                         new Claim(ClaimTypes.Role, result.Role),
                         new Claim("FullName", result.FullName),
                         new Claim("AvatarUrl", result.AvatarUrl ?? ""),
-                        new Claim("AccessToken", result.Token)
+                        new Claim("AccessToken", result.Token) 
                     };
+
+                    if (result.BranchId.HasValue)
+                    {
+                        claims.Add(new Claim("BranchId", result.BranchId.Value.ToString()));
+                    }
+                    else
+                    {
+                        claims.Add(new Claim("BranchId", "0")); // Admin tổng
+                    }
 
                     var claimsIdentity = new ClaimsIdentity(claims, "MyCookieAuth");
-
-                    var authProperties = new AuthenticationProperties
-                    {
-                        IsPersistent = true,
-                        ExpiresUtc = DateTimeOffset.UtcNow.AddHours(3)
-                    };
+                    var authProperties = new AuthenticationProperties { IsPersistent = true, ExpiresUtc = DateTimeOffset.UtcNow.AddHours(3) };
 
                     await HttpContext.SignInAsync("MyCookieAuth", new ClaimsPrincipal(claimsIdentity), authProperties);
-                    return LocalRedirect(ReturnUrl ?? "/Storefront/Index");
+
+                    string defaultUrl = "/Storefront/Index"; // Mặc định cho Customer
+
+                    if (result.Role == "Admin")
+                    {
+                        defaultUrl = "/admin/dashboard";
+                    }
+                    else if (result.Role == "Staff")
+                    {
+                        defaultUrl = "/admin/orders"; // Đường dẫn đến trang quản lý đơn hàng của Mem 3
+                    }
+                    else if (result.Role == "WarehouseManager")
+                    {
+                        defaultUrl = "/admin/warehouse"; // Đường dẫn đến trang nhập kho của Mem 2
+                    }
+
+                    string targetUrl = ReturnUrl ?? defaultUrl;
+                    return LocalRedirect(targetUrl);
                 }
             }
             try
