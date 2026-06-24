@@ -26,6 +26,10 @@ namespace WebAPI
             //Add repository pattern
             builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+            builder.Services.AddScoped<IProductRepository, ProductRepository>();
+            builder.Services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
+            builder.Services.AddScoped<IPhysicalProductRepository, PhysicalProductRepository>();
+            builder.Services.AddScoped<IFeedbackRepository, FeedbackRepository>();
             //builder.Services.AddScoped<ICartRepository, CartRepository>();
             //builder.Services.AddScoped<IOrderRepository, OrderRepository>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -36,6 +40,9 @@ namespace WebAPI
             //builder.Services.AddScoped<ICartService, CartService>();
             //builder.Services.AddScoped<IOrderService, OrderService>();
             builder.Services.AddScoped<IEmailService, EmailService>();
+            builder.Services.AddScoped<IProductService, ProductService>();
+            builder.Services.AddScoped<IWarehouseService, WarehouseService>();
+            builder.Services.AddScoped<IFeedbackService, FeedbackService>();
 
             //Add singleton pattern
             builder.Services.AddSingleton<SystemConfigService>();
@@ -70,8 +77,9 @@ namespace WebAPI
 
             // Add services to the container.
             var modelBuilder = new ODataConventionModelBuilder();
-            var laptopType = modelBuilder.EntitySet<Laptop>("Laptops").EntityType;
-            laptopType.Property(l => l.ImageUrl);
+            modelBuilder.EntitySet<Product>("Products");
+            modelBuilder.EntitySet<ProductVariant>("ProductVariants").EntityType.HasKey(p => p.VariantId);
+            modelBuilder.EntitySet<Feedback>("Feedbacks");
             modelBuilder.EntitySet<Category>("Categories");
             var edmModel = modelBuilder.GetEdmModel();
 

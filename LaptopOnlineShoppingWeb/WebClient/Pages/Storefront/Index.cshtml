@@ -19,7 +19,7 @@
             <form method="get" class="row g-3">
                 <div class="col-md-4">
                     <label for="Search" class="form-label fw-semibold text-muted small">Tìm kiếm sản phẩm</label>
-                    <input type="text" class="form-control rounded-pill border-secondary-subtle px-3" asp-for="Search" placeholder="Nhập tên hoặc mã laptop..." />
+                    <input type="text" class="form-control rounded-pill border-secondary-subtle px-3" asp-for="Search" placeholder="Nhập tên, mã SP hoặc CPU..." />
                 </div>
                 <div class="col-md-3">
                     <label for="CategoryId" class="form-label fw-semibold text-muted small">Hãng sản xuất</label>
@@ -48,54 +48,57 @@
 
     <!-- Products Grid -->
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-        @if (Model.Laptops != null && Model.Laptops.Count > 0)
+        @if (Model.ProductVariants != null && Model.ProductVariants.Count > 0)
         {
-            foreach (var item in Model.Laptops)
+            foreach (var item in Model.ProductVariants)
             {
-                var fullImageUrl = item.ImageUrl.StartsWith("http") 
-                    ? item.ImageUrl 
-                    : (string.IsNullOrEmpty(Model.ApiBaseUrl) ? "" : Model.ApiBaseUrl) + item.ImageUrl;
-
+                var inStockCount = item.PhysicalProducts?.Count(p => p.Status == "InStock") ?? 0;
+                
                 <div class="col">
                     <div class="card h-100 border-0 shadow-sm rounded-3 product-card transition-hover">
-                        <!-- Product Badge -->
-                        <span class="badge bg-success position-absolute m-2 end-0 rounded-pill">Sẵn hàng</span>
+                        @if(inStockCount > 0)
+                        {
+                            <span class="badge bg-success position-absolute m-2 end-0 rounded-pill">Còn @inStockCount</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger position-absolute m-2 end-0 rounded-pill">Hết hàng</span>
+                        }
                         
-                        <!-- Product Image -->
-                        <div class="d-flex align-items-center justify-content-center bg-light rounded-top-3 p-3 position-relative" style="height: 200px; overflow: hidden;">
-                            <img src="@fullImageUrl" class="card-img-top img-fluid" style="max-height: 100%; max-width: 100%; object-fit: contain;" alt="@item.LaptopName" onerror="this.onerror=null;this.src='/favicon.ico';this.style.width='50px';this.style.height='50px';" />
-                        </div>
+                        <a href="/Storefront/ProductDetail/@item.VariantId" class="d-flex align-items-center justify-content-center bg-light rounded-top-3 p-3 position-relative text-decoration-none" style="height: 180px; overflow: hidden;">
+                            <i class="bi bi-laptop text-secondary" style="font-size: 5rem;"></i>
+                        </a>
                         
-                        <!-- Product Body -->
                         <div class="card-body d-flex flex-column p-3">
-                            <span class="text-uppercase text-muted fw-bold small">@item.Category?.CategoryName</span>
-                            <h5 class="card-title text-dark fw-bold mt-1 text-truncate" title="@item.LaptopName">@item.LaptopName</h5>
-                            <p class="text-secondary small mb-2">Mã sản phẩm: <span class="badge bg-secondary-subtle text-secondary">@item.LaptopCode</span></p>
+                            <span class="text-uppercase text-muted fw-bold small">@item.Product?.Category?.CategoryName</span>
+                            <h5 class="card-title mt-1 text-truncate" title="@item.Product?.ProductName">
+                                <a href="/Storefront/ProductDetail/@item.VariantId" class="text-dark fw-bold text-decoration-none">@item.Product?.ProductName</a>
+                            </h5>
+                            <p class="text-secondary small mb-1">Mã: <span class="badge bg-secondary-subtle text-secondary">@item.Product?.ProductCode</span></p>
+                            <p class="text-secondary small mb-2 text-truncate">Cấu hình: @item.Cpu, @item.Ram, @item.Ssd</p>
                             
                             <div class="mt-auto d-flex justify-content-between align-items-center pt-2 border-top">
                                 <div>
                                     <span class="text-danger fw-bold fs-5">@item.Price.ToString("N0") <span class="small" style="font-size: 11px;">đ</span></span>
                                 </div>
-                                <div class="text-muted small">SL: @item.StockQuantity</div>
                             </div>
                         </div>
 
-                        <!-- Product Footer Buttons -->
                         <div class="card-footer bg-white border-0 p-3 pt-0">
                             <div class="row g-2 align-items-center">
                                 <div class="col-4">
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text">SL</span>
-                                        <input type="number" min="1" value="1" max="@item.StockQuantity" class="form-control form-control-sm buy-qty" data-laptop-id="@item.LaptopId" />
+                                        <input type="number" min="1" value="1" max="@(inStockCount > 0 ? inStockCount : 1)" class="form-control form-control-sm buy-qty" data-variant-id="@item.VariantId" @(inStockCount == 0 ? "disabled" : "") />
                                     </div>
                                 </div>
                                 <div class="col-4">
-                                    <button class="btn btn-outline-primary btn-sm w-100 rounded-pill btn-add-cart" data-laptop-id="@item.LaptopId">
-                                        <i class="bi bi-cart-plus"></i> Thêm giỏ hàng
+                                    <button class="btn btn-outline-primary btn-sm w-100 rounded-pill btn-add-cart" data-variant-id="@item.VariantId" @(inStockCount == 0 ? "disabled" : "")>
+                                        <i class="bi bi-cart-plus"></i> Thêm giỏ
                                     </button>
                                 </div>
                                 <div class="col-4">
-                                    <button class="btn btn-primary btn-sm w-100 rounded-pill text-white btn-buy-now" data-laptop-id="@item.LaptopId">
+                                    <button class="btn btn-primary btn-sm w-100 rounded-pill text-white btn-buy-now" data-variant-id="@item.VariantId" @(inStockCount == 0 ? "disabled" : "")>
                                         <i class="bi bi-bag-check"></i> Mua ngay
                                     </button>
                                 </div>
@@ -112,7 +115,7 @@
                     <i class="bi bi-laptop-fill display-1 text-secondary opacity-25"></i>
                     <h3 class="mt-3">Không tìm thấy sản phẩm nào</h3>
                     <p>Hãy thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm khác.</p>
-                    <a href="/Storefront/Index" class="btn btn-outline-primary rounded-pill px-4 mt-2">Xem tất cả Laptop</a>
+                    <a href="/Storefront/Index" class="btn btn-outline-primary rounded-pill px-4 mt-2">Xem tất cả Sản phẩm</a>
                 </div>
             </div>
         }
@@ -136,37 +139,25 @@
 @section Scripts {
     <script>
         $(document).ready(function() {
-            // Hàm bọc để gọi await cho cái getCartCount lúc tải trang
             async function initCartCount() {
                 try {
                     const count = await getCartCount();
                     $('#cartCount').text(count || 0);
-                } catch (e) { console.error("Không thể lấy số lượng giỏ hàng", e); }
+                } catch (e) {}
             }
-            // Gọi hàm khởi tạo
             initCartCount();
 
-            // Xử lý nút Thêm vào giỏ hàng
             $('.btn-add-cart').click(async function() {
-                var laptopId = $(this).data('laptop-id');
-                var qtyInput = $(`.buy-qty[data-laptop-id='${laptopId}']`);
+                var variantId = $(this).data('variant-id');
+                var qtyInput = $(`.buy-qty[data-variant-id='${variantId}']`);
                 var qty = parseInt(qtyInput.val()) || 1;
 
-                // Gọi API helper từ cart.js
-                const res = await addToCart(laptopId, qty);
+                const res = await addToCart(variantId, qty);
 
                 if (res && res.ok) {
-                    // Update cart badge
                     initCartCount();
-
-                    Swal.fire({
-                        title: 'Đã thêm vào giỏ hàng',
-                        icon: 'success',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
+                    Swal.fire({ title: 'Đã thêm vào giỏ hàng', icon: 'success', timer: 1500, showConfirmButton: false });
                 } else {
-                    // XỬ LÝ LỖI CHƯA ĐĂNG NHẬP 401 TỪ cart.js
                     if (res && res.message === 'NOT_AUTHENTICATED') {
                         Swal.fire({
                             title: 'Vui lòng đăng nhập',
@@ -176,25 +167,15 @@
                             confirmButtonText: 'Đăng nhập ngay',
                             cancelButtonText: 'Đóng'
                         }).then((result) => {
-                            if (result.isConfirmed) {
-                                // Lưu lại đường dẫn hiện tại (ReturnUrl) để đăng nhập xong quay lại đây luôn
-                                window.location.href = `/Auth/CustomerLogin?ReturnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`;
-                            }
+                            if (result.isConfirmed) window.location.href = `/Auth/CustomerLogin?ReturnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`;
                         });
                     } else {
-                        // Các lỗi khác như vượt quá tồn kho...
-                        Swal.fire({
-                            title: 'Lỗi',
-                            text: res && res.message ? res.message : 'Không thể thêm vào giỏ hàng',
-                            icon: 'error'
-                        });
+                        Swal.fire({ title: 'Lỗi', text: res && res.message ? res.message : 'Không thể thêm vào giỏ hàng', icon: 'error' });
                     }
                 }
             });
 
-            // Xử lý nút Mua ngay (Buy Now)
             $('.btn-buy-now').click(function() {
-                // Kiểm tra bằng logic: Nếu không có dấu hiệu đã đăng nhập (vd không có menu Xin chào)
                 var isLoggedIn = @(User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Customer") ? "true" : "false");
 
                 if (!isLoggedIn) {
@@ -206,19 +187,16 @@
                         confirmButtonText: 'Đăng nhập ngay',
                         cancelButtonText: 'Đóng'
                     }).then((result) => {
-                        if (result.isConfirmed) {
-                            window.location.href = `/Auth/CustomerLogin?ReturnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`;
-                        }
+                        if (result.isConfirmed) window.location.href = `/Auth/CustomerLogin?ReturnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`;
                     });
                     return;
                 }
 
-                var laptopId = $(this).data('laptop-id');
-                var qtyInput = $(`.buy-qty[data-laptop-id='${laptopId}']`);
+                var variantId = $(this).data('variant-id');
+                var qtyInput = $(`.buy-qty[data-variant-id='${variantId}']`);
                 var qty = parseInt(qtyInput.val()) || 1;
 
-                var url = `/Storefront/Checkout?buynow=true&laptopid=${laptopId}&qty=${qty}`;
-                window.location.href = url;
+                window.location.href = `/Storefront/Checkout?buynow=true&variantid=${variantId}&qty=${qty}`;
             });
         });
     </script>

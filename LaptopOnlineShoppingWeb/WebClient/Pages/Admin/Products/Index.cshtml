@@ -1,0 +1,434 @@
+@page
+@model WebClient.Pages.Admin.Products.IndexModel
+@{
+    ViewData["Title"] = "Quản lý Sản phẩm";
+    Layout = "_AdminLayout";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold text-dark m-0">Quản lý Sản phẩm & Cấu hình</h3>
+        <button class="btn btn-primary shadow-sm" onclick="openProductModal()">
+            <i class="bi bi-plus-circle me-1"></i> Thêm Sản phẩm Mới
+        </button>
+    </div>
+
+    <!-- Product Grid -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle m-0" id="productsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Mã SP</th>
+                            <th>Tên Sản Phẩm</th>
+                            <th>Hãng</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end pe-4">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rendered by AJAX -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Product Modal -->
+<div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title fw-bold" id="productModalTitle">Thêm Sản phẩm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <form id="productForm">
+                    <input type="hidden" id="p_id" value="0" />
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Mã Sản phẩm <span class="text-danger">*</span></label>
+                        <input type="text" id="p_code" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tên Sản phẩm <span class="text-danger">*</span></label>
+                        <input type="text" id="p_name" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Hãng sản xuất <span class="text-danger">*</span></label>
+                        <select id="p_categoryId" class="form-select" required>
+                            <option value="">-- Chọn Hãng --</option>
+                            @foreach (var c in Model.Categories)
+                            {
+                                <option value="@c.CategoryId">@c.CategoryName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Trạng thái</label>
+                        <select id="p_status" class="form-select">
+                            <option value="true">Đang kinh doanh</option>
+                            <option value="false">Ngừng kinh doanh</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Mô tả tóm tắt</label>
+                        <textarea id="p_description" class="form-control" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top-0 bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-success px-4" onclick="saveProduct()">Lưu lại</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Variants Modal -->
+<div class="modal fade" id="variantsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom-0 d-flex justify-content-between align-items-center">
+                <h5 class="modal-title fw-bold" id="variantsModalTitle">Cấu hình biến thể</h5>
+                <div>
+                    <button class="btn btn-sm btn-primary me-2" onclick="openVariantFormModal()">
+                        <i class="bi bi-plus"></i> Thêm Cấu hình
+                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body p-0">
+                <input type="hidden" id="currentProductIdForVariants" />
+                <table class="table table-hover align-middle m-0" id="variantsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">CPU</th>
+                            <th>RAM</th>
+                            <th>SSD</th>
+                            <th>Màu sắc</th>
+                            <th>Giá bán</th>
+                            <th>Tồn kho</th>
+                            <th class="text-end pe-4">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Variants by AJAX -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Variant Form Modal -->
+<div class="modal fade" id="variantFormModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title fw-bold" id="variantFormModalTitle">Thêm Cấu hình</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <form id="variantForm">
+                    <input type="hidden" id="v_id" value="0" />
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">CPU</label>
+                        <input type="text" id="v_cpu" class="form-control" placeholder="Core i7" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">RAM</label>
+                        <input type="text" id="v_ram" class="form-control" placeholder="16GB" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">SSD</label>
+                        <input type="text" id="v_ssd" class="form-control" placeholder="512GB" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Màu sắc</label>
+                        <input type="text" id="v_color" class="form-control" placeholder="Đen" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Giá bán (VNĐ) <span class="text-danger">*</span></label>
+                        <input type="number" id="v_price" class="form-control" min="0.01" required />
+                        <div class="invalid-feedback">Giá tiền phải lớn hơn 0</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top-0 bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-success px-4" onclick="saveVariant()">Lưu lại</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let apiBase = document.body.getAttribute('data-api-base') || '';
+        let token = document.body.getAttribute('data-token') || '';
+        
+        let pModal, vModal, vfModal;
+        
+        document.addEventListener("DOMContentLoaded", () => {
+            pModal = new bootstrap.Modal(document.getElementById('productModal'));
+            vModal = new bootstrap.Modal(document.getElementById('variantsModal'));
+            vfModal = new bootstrap.Modal(document.getElementById('variantFormModal'));
+            loadProducts();
+        });
+
+        const getHeaders = () => ({
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        });
+
+        // ================= PRODUCT LOGIC =================
+        function loadProducts() {
+            fetch(`${apiBase}/api/Products`, { headers: getHeaders() })
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.querySelector('#productsTable tbody');
+                tbody.innerHTML = '';
+                if(data.length === 0){
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">Chưa có sản phẩm nào.</td></tr>`;
+                    return;
+                }
+                data.forEach(p => {
+                    let statusBadge = p.Status ? '<span class="badge bg-success">Đang bán</span>' : '<span class="badge bg-secondary">Ngừng bán</span>';
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="ps-4 text-secondary fw-bold">${p.ProductCode}</td>
+                            <td class="fw-bold text-dark">${p.ProductName}</td>
+                            <td>${p.CategoryName || ''}</td>
+                            <td>${statusBadge}</td>
+                            <td class="text-end pe-4">
+                                <button class="btn btn-sm btn-outline-info me-1" onclick="openVariants(${p.ProductId}, '${p.ProductName}')">
+                                    <i class="bi bi-list-check"></i> Biến thể
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick='editProduct(${JSON.stringify(p)})'>
+                                    <i class="bi bi-pencil-square"></i> Sửa
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(${p.ProductId})">
+                                    <i class="bi bi-trash"></i> Xóa
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            })
+            .catch(err => Swal.fire('Lỗi', 'Không thể tải danh sách sản phẩm', 'error'));
+        }
+
+        function openProductModal() {
+            document.getElementById('productForm').reset();
+            document.getElementById('p_id').value = 0;
+            document.getElementById('productModalTitle').innerText = "Thêm Sản phẩm Mới";
+            pModal.show();
+        }
+
+        function editProduct(p) {
+            document.getElementById('p_id').value = p.ProductId;
+            document.getElementById('p_code').value = p.ProductCode;
+            document.getElementById('p_name').value = p.ProductName;
+            document.getElementById('p_categoryId').value = p.CategoryId;
+            document.getElementById('p_status').value = p.Status ? "true" : "false";
+            document.getElementById('p_description').value = p.Description || "";
+            document.getElementById('productModalTitle').innerText = "Chỉnh sửa Sản phẩm";
+            pModal.show();
+        }
+
+        function saveProduct() {
+            const form = document.getElementById('productForm');
+            if(!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+
+            const id = document.getElementById('p_id').value;
+            const data = {
+                productCode: document.getElementById('p_code').value,
+                productName: document.getElementById('p_name').value,
+                categoryId: parseInt(document.getElementById('p_categoryId').value),
+                status: document.getElementById('p_status').value === "true",
+                description: document.getElementById('p_description').value
+            };
+
+            const url = id == 0 ? `${apiBase}/api/Products` : `${apiBase}/api/Products/${id}`;
+            const method = id == 0 ? 'POST' : 'PUT';
+
+            fetch(url, {
+                method: method,
+                headers: getHeaders(),
+                body: JSON.stringify(data)
+            })
+            .then(res => {
+                if(!res.ok) throw new Error("Lỗi khi lưu sản phẩm");
+                return res.json();
+            })
+            .then(resData => {
+                pModal.hide();
+                Swal.fire('Thành công', resData.message || 'Lưu thành công', 'success');
+                loadProducts();
+            })
+            .catch(err => Swal.fire('Lỗi', err.message, 'error'));
+        }
+
+        function deleteProduct(id) {
+            Swal.fire({
+                title: 'Xóa sản phẩm?',
+                text: "Toàn bộ biến thể của sản phẩm cũng có thể bị ảnh hưởng. Bạn có chắc không?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Xóa',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`${apiBase}/api/Products/${id}`, {
+                        method: 'DELETE',
+                        headers: getHeaders()
+                    })
+                    .then(res => {
+                        if(!res.ok) throw new Error("Xóa thất bại");
+                        return res.json();
+                    })
+                    .then(data => {
+                        Swal.fire('Đã xóa', data.message, 'success');
+                        loadProducts();
+                    })
+                    .catch(err => Swal.fire('Lỗi', err.message, 'error'));
+                }
+            })
+        }
+
+        // ================= VARIANT LOGIC =================
+        function openVariants(productId, productName) {
+            document.getElementById('currentProductIdForVariants').value = productId;
+            document.getElementById('variantsModalTitle').innerText = "Cấu hình biến thể - " + productName;
+            loadVariants(productId);
+            vModal.show();
+        }
+
+        function loadVariants(productId) {
+            // We can fetch from product by id to get variants easily
+            fetch(`${apiBase}/api/Products/${productId}`, { headers: getHeaders() })
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.querySelector('#variantsTable tbody');
+                tbody.innerHTML = '';
+                const variants = data.ProductVariants || [];
+                if(variants.length === 0){
+                    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">Chưa có biến thể nào.</td></tr>`;
+                    return;
+                }
+                variants.forEach(v => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="ps-4 fw-bold">${v.Cpu || ''}</td>
+                            <td>${v.Ram || ''}</td>
+                            <td>${v.Ssd || ''}</td>
+                            <td>${v.Color || ''}</td>
+                            <td class="text-danger fw-bold">${v.Price.toLocaleString('vi-VN')} đ</td>
+                            <td><span class="badge bg-primary">${v.InStockCount}</span></td>
+                            <td class="text-end pe-4">
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick='editVariant(${JSON.stringify(v)})'>
+                                    Sửa
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteVariant(${v.VariantId}, ${v.ProductId})">
+                                    Xóa
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            });
+        }
+
+        function openVariantFormModal() {
+            document.getElementById('variantForm').reset();
+            document.getElementById('v_id').value = 0;
+            document.getElementById('variantFormModalTitle').innerText = "Thêm Cấu hình Mới";
+            vfModal.show();
+        }
+
+        function editVariant(v) {
+            document.getElementById('v_id').value = v.VariantId;
+            document.getElementById('v_cpu').value = v.Cpu || '';
+            document.getElementById('v_ram').value = v.Ram || '';
+            document.getElementById('v_ssd').value = v.Ssd || '';
+            document.getElementById('v_color').value = v.Color || '';
+            document.getElementById('v_price').value = v.Price;
+            document.getElementById('variantFormModalTitle').innerText = "Sửa Cấu hình";
+            vfModal.show();
+        }
+
+        function saveVariant() {
+            const form = document.getElementById('variantForm');
+            const priceInput = document.getElementById('v_price');
+            
+            if(parseFloat(priceInput.value) <= 0 || !priceInput.value) {
+                priceInput.classList.add('is-invalid');
+                return;
+            } else {
+                priceInput.classList.remove('is-invalid');
+            }
+
+            const id = document.getElementById('v_id').value;
+            const productId = document.getElementById('currentProductIdForVariants').value;
+            
+            const data = {
+                productId: parseInt(productId),
+                cpu: document.getElementById('v_cpu').value,
+                ram: document.getElementById('v_ram').value,
+                ssd: document.getElementById('v_ssd').value,
+                color: document.getElementById('v_color').value,
+                price: parseFloat(priceInput.value)
+            };
+
+            const url = id == 0 ? `${apiBase}/api/ProductVariants` : `${apiBase}/api/ProductVariants/${id}`;
+            const method = id == 0 ? 'POST' : 'PUT';
+
+            fetch(url, {
+                method: method,
+                headers: getHeaders(),
+                body: JSON.stringify(data)
+            })
+            .then(res => {
+                if(!res.ok) throw new Error("Lỗi khi lưu biến thể");
+                return res.json();
+            })
+            .then(resData => {
+                vfModal.hide();
+                Swal.fire('Thành công', 'Đã lưu cấu hình', 'success');
+                loadVariants(productId); // redraw sub-grid
+            })
+            .catch(err => Swal.fire('Lỗi', err.message, 'error'));
+        }
+
+        function deleteVariant(id, productId) {
+            Swal.fire({
+                title: 'Xóa biến thể?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Xóa',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`${apiBase}/api/ProductVariants/${id}`, {
+                        method: 'DELETE',
+                        headers: getHeaders()
+                    })
+                    .then(res => {
+                        if(!res.ok) throw new Error("Xóa thất bại");
+                        return res.json();
+                    })
+                    .then(data => {
+                        Swal.fire('Đã xóa', 'Xóa cấu hình thành công', 'success');
+                        loadVariants(productId);
+                    })
+                    .catch(err => Swal.fire('Lỗi', err.message, 'error'));
+                }
+            })
+        }
+    </script>
+}
