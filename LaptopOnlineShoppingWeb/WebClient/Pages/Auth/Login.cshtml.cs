@@ -9,8 +9,7 @@ using WebClient.ViewModels.Auth;
 namespace WebClient.Pages.Auth
 {
     public class LoginModel : PageModel
-    {
-        public string GoogleClientId { get; set; }
+    {       
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
 
@@ -19,6 +18,8 @@ namespace WebClient.Pages.Auth
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
         }
+
+        public string GoogleClientId { get; set; }
 
         [BindProperty]
         public string Username { get; set; } = string.Empty;
@@ -135,6 +136,64 @@ namespace WebClient.Pages.Auth
             }
 
             return Page();
+        }
+
+        public async Task<IActionResult> OnPostGoogleCallbackAsync([FromBody] LoginResponse data)
+        {
+            if (data == null || string.IsNullOrEmpty(data.Token))
+            {
+                return BadRequest(new { success = false, message = "Dữ liệu trả về từ API không hợp lệ." });
+            }
+
+            // 1. Đóng gói danh sách Claims y hệt như lúc đăng nhập bằng mật khẩu thường
+            var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.Name, data.FullName ?? "Staff"),
+        new Claim(ClaimTypes.Role, data.Role),
+        new Claim("FullName", data.FullName ?? ""),
+        new Claim("AvatarUrl", data.AvatarUrl ?? ""),
+        new Claim("AccessToken", data.Token)
+    };
+
+            // Kiểm tra và nhét BranchId vào claim
+            if (data.BranchId.HasValue)
+            {
+                claims.Add(new Claim("BranchId", data.BranchId.Value.ToString()));
+            }
+            else
+            {
+                claims.Add(new Claim("BranchId", "0")); // Admin tổng
+            }
+
+            var claimsIdentity = new ClaimsIdentity(claims, "MyCookieAuth");
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = true,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(3)
+            };
+
+            // 2. Kích hoạt Cookie - Chính thức cho User này vào cổng bảo mật của Razor Pages
+            await HttpContext.SignInAsync("MyCookieAuth", new ClaimsPrincipal(claimsIdentity), authProperties);
+
+            // 3. Tính toán địa điểm chuyển hướng dựa theo phân quyền (Role) giống hệt OnPost thường
+            string defaultUrl = "/Storefront/Index";
+            if (data.Role == "Admin")
+            {
+                defaultUrl = "/admin/dashboard";
+            }
+            else if (data.Role == "Staff")
+            {
+                defaultUrl = "/admin/orders";
+            }
+            else if (data.Role == "WarehouseManager")
+            {
+                defaultUrl = "/admin/warehouse";
+            }
+
+            string targetUrl = ReturnUrl ?? defaultUrl;
+
+            // Trả về kết quả kèm URL mục tiêu cho Javascript thực hiện redirect
+            return new JsonResult(new { success = true, redirectTo = targetUrl });
         }
     }
 }

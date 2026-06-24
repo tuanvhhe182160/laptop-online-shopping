@@ -38,19 +38,19 @@
 <body class="bg-light">
     <div class="d-flex">
         <div class="sidebar p-3 shadow">
-            <h4 class="text-white text-center fw-bold mt-2 mb-4"><i class="bi bi-laptop"></i> LaptopShop</h4>
+            <h4 class="text-white text-center fw-bold mt-2 mb-4"><i class="bi bi-laptop"></i> <a href="/storefront/index" class="text-white text-decoration-none">LaptopShop</a></h4>
             <hr class="text-secondary">
             <ul class="nav flex-column">
                 @{
                     string GetActive(string path) => ViewContext.HttpContext.Request.Path.StartsWithSegments(path) ? "active" : "";
                 }
-
-                <li class="nav-item">
-                    <a class="nav-link @GetActive("/admin/dashboard")" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
-                </li>
-
+              
                 @if (User.IsInRole("Admin"))
                 {
+                    <li class="nav-item">
+                        <a class="nav-link @GetActive("/admin/dashboard")" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+                    </li>
+
                     <li class="nav-item">
                         <a class="nav-link @GetActive("/admin/users")" href="/admin/users"><i class="bi bi-people me-2"></i> Quản lý Nhân sự</a>
                     </li>

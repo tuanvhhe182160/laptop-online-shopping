@@ -99,17 +99,24 @@
                  data-auto_prompt="false">
             </div>
 
-            <button type="button" onclick="google.accounts.id.prompt()" class="btn btn-google w-100 btn-lg d-flex align-items-center justify-content-center">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" style="width: 20px;" class="me-2" alt="Google" />
-                Đăng nhập bằng Google
-            </button>
+            <div class="d-flex justify-content-center">
+                <div class="g_id_signin"
+                     data-type="standard"
+                     data-shape="pill"
+                     data-theme="outline"
+                     data-text="signin_with"
+                     data-size="large"
+                     data-logo_alignment="left">
+                </div>
+            </div>
         </form>
     </div>
+    @Html.AntiForgeryToken()
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         function handleCredentialResponse(response) {
-            // Gửi token lên Backend của bạn
+            // Bước 1: Gửi Token Google lên Web API của hệ thống
             fetch('https://localhost:7136/api/auth/staff-google-login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -119,14 +126,34 @@
                 if (!res.ok) return res.json().then(err => { throw new Error(err.message); });
                 return res.json();
             })
-            .then(data => {
-                // Lưu token vào localStorage để Dashboard dùng
-                localStorage.setItem("token", data.token);
-                // Redirect vào trang chính sau khi login xong
-                window.location.href = "/admin/dashboard";
+            .then(apiData => {
+                // Đồng bộ: Lưu vào localStorage cho tầng JS của Dashboard tiện sử dụng nếu cần
+                localStorage.setItem("token", apiData.token);
+
+                // Lấy mã Token bảo mật Antiforgery từ trang để nộp cho Razor Page
+                const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+                // Bước 2: Bắn ngược dữ liệu về Handler của Razor để tiến hành tạo Cookie đăng nhập
+                return fetch('?handler=GoogleCallback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': csrfToken // Thẻ bài thông hành bắt buộc của Razor Pages
+                    },
+                    body: JSON.stringify(apiData)
+                });
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    // Bước 3: Bay thẳng tới địa bàn được phân công (Admin -> Dashboard, Staff -> Orders...)
+                    window.location.href = result.redirectTo;
+                } else {
+                    throw new Error("Lỗi thiết lập phiên làm việc nội bộ.");
+                }
             })
             .catch(err => {
-                Swal.fire("Đăng nhập Google thất bại", err.message, "error");
+                Swal.fire("Đăng nhập thất bại", err.message, "error");
             });
         }
     </script>

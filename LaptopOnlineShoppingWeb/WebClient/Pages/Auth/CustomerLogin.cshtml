@@ -34,13 +34,74 @@
                             <input type="password" id="Password" name="Password" class="form-control" required />
                         </div>
 
-                        <button type="submit" class="btn btn-dark w-100">Đăng nhập</button>
+                        <button type="submit" class="btn btn-dark w-100 btn-lg fw-bold mb-3 shadow-sm">ĐĂNG NHẬP</button>
+
+                        <div class="position-relative my-4">
+                            <hr class="text-muted border-secondary" />
+                            <span class="position-absolute top-50 start-50 translate-middle bg-white px-2 small text-muted">HOẶC</span>
+                        </div>
+
+                        <div id="g_id_onload"
+                             data-client_id="@Model.GoogleClientId"
+                             data-callback="handleCustomerGoogle"
+                             data-auto_prompt="false">
+                        </div>
+
+                        <div class="d-flex justify-content-center">
+                            <div class="g_id_signin"
+                                 data-type="standard"
+                                 data-shape="pill"
+                                 data-theme="outline"
+                                 data-text="signin_with"
+                                 data-size="large"
+                                 data-logo_alignment="left">
+                            </div>
+                        </div>
                     </form>
 
                     <div class="text-center mt-3">
                         <a href="/Auth/CustomerRegister" class="text-decoration-none">Chưa có tài khoản? Đăng ký ngay</a>
                     </div>
                 </div>
+                <script>
+                    function handleCustomerGoogle(response) {
+                        // Bước 1: Gửi Token Google lên Web API
+                        fetch('https://localhost:7136/api/auth/customer-google-login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ idToken: response.credential })
+                        })
+                        .then(res => {
+                            if (!res.ok) return res.json().then(err => { throw new Error(err.message); });
+                            return res.json();
+                        })
+                        .then(apiData => {
+                            // LẤY MÃ BẢO MẬT CSRF TỪ FORM CỦA RAZOR
+                            const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+                            // Bước 2: Gửi data API trả về lên Handler của Razor
+                            return fetch('?handler=GoogleCallback', { // <--- Đã sửa URL
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'RequestVerificationToken': csrfToken // <--- Đã kẹp thẻ bảo mật
+                                },
+                                body: JSON.stringify(apiData)
+                            });
+                        })
+                        .then(res => res.json())
+                        .then(result => {
+                            if (result.success) {
+                                window.location.href = "/Storefront/Index";
+                            } else {
+                                throw new Error("Lỗi ghi nhận phiên đăng nhập tại Frontend.");
+                            }
+                        })
+                        .catch(err => {
+                            Swal.fire("Đăng nhập thất bại", err.message, "error");
+                        });
+                    }
+                </script>
             </div>
         </div>
     </div>

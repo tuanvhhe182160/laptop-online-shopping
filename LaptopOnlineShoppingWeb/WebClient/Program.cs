@@ -21,6 +21,8 @@ namespace WebClient
                     options.LoginPath = "/Auth/Login"; 
                     options.AccessDeniedPath = "/Auth/AccessDenied";
                     options.ExpireTimeSpan = TimeSpan.FromHours(1);
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
                 });
 
             // Add services to the container.

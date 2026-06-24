@@ -109,14 +109,24 @@ namespace WebAPI.Controllers
                 var customer = await _context.Customers.FindAsync(userId);
 
                 if (customer == null) return NotFound(new { message = "Tài khoản không tồn tại." });
-                if (!BCrypt.Net.BCrypt.Verify(request.OldPassword, customer.PasswordHash))
-                    return BadRequest(new { message = "Mật khẩu cũ không chính xác." });
+                if (customer.IsGoogleAccount)
+                {
+                    customer.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+                    customer.IsGoogleAccount = false;
+                }
+                else
+                {
+                    if (!BCrypt.Net.BCrypt.Verify(request.OldPassword, customer.PasswordHash))
+                        return BadRequest(new { message = "Mật khẩu cũ không chính xác." });
 
-                customer.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+                    customer.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+                }           
             }
             else
             {
                 var user = await _context.Users.FindAsync(userId);
+                if (user == null) return NotFound(new { message = "Nhân viên không tồn tại." });
+
                 if (!BCrypt.Net.BCrypt.Verify(request.OldPassword, user.PasswordHash))
                     return BadRequest(new { message = "Mật khẩu cũ không chính xác." });
 

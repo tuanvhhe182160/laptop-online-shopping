@@ -1,4 +1,5 @@
 ﻿using Google.Apis.Auth;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -42,7 +43,8 @@ namespace WebAPI.Controllers
                     Token = adminToken,
                     FullName = _configuration["AdminAccount:FullName"]!,
                     Role = "Admin",
-                    AvatarUrl = ""
+                    AvatarUrl = "",
+                    BranchId = 0
                 });
             }
 
@@ -56,15 +58,18 @@ namespace WebAPI.Controllers
             bool isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
             if (!isPasswordValid) return Unauthorized(new { message = "Mật khẩu không chính xác." });
 
+            string roleName = user.Role?.RoleName ?? "Staff";
+
             // Truyền BranchId vào Token
-            var token = GenerateJwtToken(user.UserId.ToString(), user.Username, user.Role.RoleName, user.FullName, user.AvatarUrl, user.BranchId);
+            var token = GenerateJwtToken(user.UserId.ToString(), user.Username, roleName, user.FullName, user.AvatarUrl, user.BranchId);
 
             return Ok(new LoginResponse
             {
                 Token = token,
                 FullName = user.FullName,
                 Role = user.Role.RoleName,
-                AvatarUrl = user.AvatarUrl ?? ""
+                AvatarUrl = user.AvatarUrl ?? "",
+                BranchId = user.BranchId
             });
         }
 
@@ -122,7 +127,8 @@ namespace WebAPI.Controllers
                 Token = token,
                 FullName = customer.FullName,
                 Role = "Customer",
-                AvatarUrl = customer.AvatarUrl ?? ""
+                AvatarUrl = customer.AvatarUrl ?? "",
+                IsGoogleAccount = false
             });
         }
 
@@ -272,7 +278,8 @@ namespace WebAPI.Controllers
                     Token = token,
                     FullName = user.FullName,
                     Role = user.Role.RoleName,
-                    AvatarUrl = user.AvatarUrl ?? ""
+                    AvatarUrl = user.AvatarUrl ?? "",
+                    BranchId = user.BranchId
                 });
             }
             catch (InvalidJwtException)
@@ -309,10 +316,12 @@ namespace WebAPI.Controllers
                 {
                     customer = new Customer
                     {
+                        Username = payload.Email,
                         Email = payload.Email,
                         FullName = payload.Name, // Hoặc thuộc tính tương ứng trong Model của bạn (ví dụ: Name)
                         AvatarUrl = payload.Picture, // Hoặc thuộc tính lưu ảnh đại diện (ví dụ: Picture)
-                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()), // Gán pass rác đã hash
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("GOOGLE_LOGIN_ONLY"),
+                        IsGoogleAccount = true,
                         IsActive = true,
                     };
 
@@ -338,14 +347,15 @@ namespace WebAPI.Controllers
                     customer.FullName,
                     customer.AvatarUrl,
                     null
-                );
+                );              
 
                 return Ok(new LoginResponse
                 {
                     Token = token,
                     FullName = customer.FullName,
                     Role = "Customer",
-                    AvatarUrl = customer.AvatarUrl ?? ""
+                    AvatarUrl = customer.AvatarUrl ?? "",
+                    IsGoogleAccount = customer.IsGoogleAccount
                 });
             }
             catch (InvalidJwtException)

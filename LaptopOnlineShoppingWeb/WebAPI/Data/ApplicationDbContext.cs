@@ -128,6 +128,8 @@ public partial class ApplicationDbContext : DbContext
                 .HasMaxLength(100)
                 .IsUnicode(false);
             entity.Property(e => e.Username).HasMaxLength(50);
+            entity.Property(e => e.IsGoogleAccount)
+                .HasDefaultValue(false);
         });
 
         modelBuilder.Entity<Feedback>(entity =>
