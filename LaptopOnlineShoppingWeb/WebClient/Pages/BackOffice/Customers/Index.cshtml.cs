@@ -1,13 +1,13 @@
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Collections.Generic;
-using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text.Json;
-using System.Threading.Tasks;
 using WebClient.Models;
 
 namespace WebClient.Pages.BackOffice.Customers
 {
+    [Authorize(Roles = "Admin,Staff")]
     public class IndexModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;
@@ -17,18 +17,37 @@ namespace WebClient.Pages.BackOffice.Customers
             _httpClientFactory = httpClientFactory;
         }
 
-        public List<CustomerViewModel> Customers { get; set; } = new List<CustomerViewModel>();
+        public List<CustomerViewModel> Customers { get; set; } = new();
+
+        [BindProperty(SupportsGet = true)]
+        public string? SearchTerm { get; set; }
 
         public async Task<IActionResult> OnGetAsync()
         {
             var client = _httpClientFactory.CreateClient("WebAPI");
-            var response = await client.GetAsync("/api/customers");
+
+            // 1. MẶC GIÁP TOKEN
+            var token = User.FindFirst("AccessToken")?.Value;
+            if (!string.IsNullOrEmpty(token))
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
+
+            // 2. Odata query: Lấy danh sách khách hàng, nếu có SearchTerm thì lọc theo FullName hoặc Phone
+            string endpoint = "api/customers";
+
+            if (!string.IsNullOrEmpty(SearchTerm))
+            {
+                string cleanSearch = SearchTerm.Trim().ToLower();
+                endpoint += $"?$filter=contains(tolower(FullName), '{cleanSearch}') or contains(Phone, '{cleanSearch}')";
+            }
+
+            var response = await client.GetAsync(endpoint);
 
             if (response.IsSuccessStatusCode)
             {
-                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var list = await JsonSerializer.DeserializeAsync<List<CustomerViewModel>>(await response.Content.ReadAsStreamAsync(), options);
-                if (list != null) Customers = list;
+                var content = await response.Content.ReadAsStringAsync();
+                Customers = JsonSerializer.Deserialize<List<CustomerViewModel>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
             }
 
             return Page();

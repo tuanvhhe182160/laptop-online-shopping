@@ -17,6 +17,7 @@ namespace WebAPI.Repositories
         {
             return await _context.Users
                 .Include(u => u.Role)
+                .Include(u => u.Branch)
                 .AsNoTracking()
                 .ToListAsync();
         }
@@ -64,6 +65,7 @@ namespace WebAPI.Repositories
             // Dùng AsNoTracking để đọc dữ liệu siêu tốc, không lưu cache bộ nhớ
             return await _context.Users
                 .Include(u => u.Role)
+                .Include(u => u.Branch)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.UserId == id);
         }

@@ -1,53 +1,89 @@
 ﻿@page "{id:int}"
 @model WebClient.Pages.Admin.Users.DetailsModel
 @{
-    ViewData["Title"] = "Chi tiết Nhân sự";
+    ViewData["Title"] = "Hồ Sơ Chi Tiết Nhân Sự";
     Layout = "_AdminLayout";
+    var u = Model.UserDetail;
+    var badgeCol = u.RoleName == "Admin" ? "danger" : u.RoleName == "WarehouseManager" ? "success" : "primary";
 }
 
-<div class="container-fluid mt-4">
+<div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold text-primary">Thông tin Nhân sự #@Model.UserDetail.UserId</h3>
-        <a asp-page="./Index" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> Quay lại danh sách
+        <div>
+            <h3 class="fw-extrabold text-dark mb-0"><i class="bi bi-person-vcard-fill text-primary me-2"></i>HỒ SƠ NHÂN SỰ #@u.UserId</h3>
+            <p class="text-muted small mb-0">Truy xuất dữ liệu định danh từ hệ thống quản trị trung tâm</p>
+        </div>
+        <a asp-page="./Index" class="btn btn-secondary btn-lg fw-medium shadow-sm d-flex align-items-center">
+            <i class="bi bi-arrow-left-circle me-2 fs-5"></i> Quay lại danh sách
         </a>
     </div>
 
-    <div class="card shadow-sm border-0 col-md-6">
-        <div class="card-body p-4">
-            <table class="table table-borderless fs-5">
-                <tbody>
-                    <tr>
-                        <th class="text-muted w-25">Tài khoản:</th>
-                        <td class="fw-bold">@Model.UserDetail.Username</td>
-                    </tr>
-                    <tr>
-                        <th class="text-muted">Họ và tên:</th>
-                        <td>@Model.UserDetail.FullName</td>
-                    </tr>
-                    <tr>
-                        <th class="text-muted">Email:</th>
-                        <td>@Model.UserDetail.Email</td>
-                    </tr>
-                    <tr>
-                        <th class="text-muted">Quyền hạn:</th>
-                        <td><span class="badge bg-primary fs-6">@Model.UserDetail.RoleName</span></td>
-                    </tr>
-                    <tr>
-                        <th class="text-muted">Trạng thái:</th>
-                        <td>
-                            @if (Model.UserDetail.IsActive)
-                            {
-                                <span class="badge bg-success fs-6"><i class="bi bi-check-circle"></i> Đang hoạt động</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-danger fs-6"><i class="bi bi-lock-fill"></i> Đã bị khóa</span>
-                            }
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+    <div class="row">
+        <div class="col-xl-6 col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-@badgeCol text-white p-4 d-flex align-items-center position-relative">
+                    <div class="position-absolute top-0 end-0 p-3">
+                        <i class="bi bi-shield-check opacity-25" style="font-size: 4rem;"></i>
+                    </div>
+
+                    <div class="bg-white text-@badgeCol rounded-circle d-flex align-items-center justify-content-center me-4 shadow" style="width: 75px; height: 75px;">
+                        <i class="bi bi-person-badge-fill" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <div class="z-1">
+                        <h3 class="fw-extrabold mb-0 text-white">@u.FullName</h3>
+                        <span class="text-white-50 small tracking-wider fw-medium">@u.Email</span>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <table class="table table-borderless fs-5 mb-0 align-middle">
+                        <tbody>
+                            <tr class="border-bottom">
+                                <th class="text-muted w-35 py-3"><i class="bi bi-person-bounding-box text-secondary me-2"></i>Tên đăng nhập:</th>
+                                <td class="fw-bold text-dark py-3">@u.Username</td>
+                            </tr>
+                            <tr class="border-bottom">
+                                <th class="text-muted py-3"><i class="bi bi-key-fill text-secondary me-2"></i>Phân quyền:</th>
+                                <td class="py-3">
+                                    <span class="badge bg-@badgeCol-subtle text-@badgeCol fw-extrabold px-3 py-2 fs-6">
+                                        @u.RoleName
+                                    </span>
+                                </td>
+                            </tr>
+
+                            <tr class="border-bottom">
+                                <th class="text-muted py-3"><i class="bi bi-shop text-secondary me-2"></i>Đơn vị trực thuộc:</th>
+                                <td class="py-3">
+                                    <i class="bi bi-geo-alt-fill text-danger me-1"></i>
+                                    <strong class="text-dark">@(u.BranchName ?? "Trụ sở chính (Toàn Server)")</strong>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <th class="text-muted py-3"><i class="bi bi-activity text-secondary me-2"></i>Trạng thái:</th>
+                                <td class="py-3">
+                                    @if (u.IsActive)
+                                    {
+                                        <span class="badge bg-success fs-6 px-3 py-2 shadow-sm">
+                                            <i class="bi bi-check-circle-fill me-1"></i> Đang hoạt động
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger fs-6 px-3 py-2 shadow-sm">
+                                            <i class="bi bi-lock-fill me-1"></i> Đã bị khóa
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card-footer bg-light p-3 text-center text-muted small">
+                    <i class="bi bi-upc-scan me-1"></i> Mã định danh nội bộ: <strong class="text-dark">SYS-USR-2026-@u.UserId</strong>
+                </div>
+            </div>
         </div>
     </div>
 </div>

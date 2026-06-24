@@ -27,7 +27,7 @@ namespace WebClient
             builder.Services.AddRazorPages(options =>
             {
                 options.Conventions.AddPageRoute("/Storefront/Index", "");
-            });
+            }).AddCookieTempDataProvider();
 
             var app = builder.Build();
 

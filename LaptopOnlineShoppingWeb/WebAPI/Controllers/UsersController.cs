@@ -33,7 +33,9 @@ namespace WebAPI.Controllers
                 u.FullName,
                 u.Email,
                 u.IsActive,
-                RoleName = u.Role?.RoleName 
+                RoleName = u.Role?.RoleName,
+                BranchId = u.BranchId,
+                BranchName = u.Branch?.BranchName ?? "Toàn hệ thống" // Hiển thị cho Admin tổng
             });
 
             return Ok(response);
@@ -43,7 +45,7 @@ namespace WebAPI.Controllers
         public async Task<IActionResult> CreateUser([FromBody] UserCreateRequest request)
         {
             if (await _userRepository.UsernameExistsAsync(request.Username))
-                return BadRequest("Username đã tồn tại."); // Bỏ object nặc danh để Client đọc chuỗi lỗi dễ hơn
+                return BadRequest("Username đã tồn tại."); 
 
             var newUser = new User
             {
@@ -52,6 +54,7 @@ namespace WebAPI.Controllers
                 FullName = request.FullName,
                 Email = request.Email,
                 RoleId = request.RoleId,
+                BranchId = request.BranchId,
                 IsActive = request.IsActive
             };
 
@@ -90,10 +93,12 @@ namespace WebAPI.Controllers
                 user.FullName,
                 user.Email,
                 user.IsActive,
-                RoleName = user.Role?.RoleName ?? "Chưa cấp quyền"
+                RoleName = user.Role?.RoleName ?? "Chưa cấp quyền",
+                BranchId = user.BranchId,
+                BranchName = user.Branch?.BranchName ?? "Toàn hệ thống"
             };
 
             return Ok(response);
-        }
+        } 
     }
 }
