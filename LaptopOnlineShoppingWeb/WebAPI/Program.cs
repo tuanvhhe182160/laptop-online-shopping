@@ -106,8 +106,12 @@ namespace WebAPI
             }
 
             app.UseHttpsRedirection();
-            app.UseCors("AllowClient");
+
             app.UseStaticFiles();
+
+            app.UseRouting();
+
+            app.UseCors("AllowClient");
 
             app.UseAuthentication();
             app.UseAuthorization();

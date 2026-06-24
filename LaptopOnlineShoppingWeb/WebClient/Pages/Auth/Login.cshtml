@@ -1,7 +1,7 @@
 ﻿@page
 @model WebClient.Pages.Auth.LoginModel
 @{
-    ViewData["Title"] = "Đăng nhập Cổng Quản Trị - LaptopShop";
+    ViewData["Title"] = "Đăng nhập hệ thống - LaptopShop";
     Layout = null;
 }
 
@@ -13,6 +13,7 @@
     <title>@ViewData["Title"]</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         body {
             background-color: #f8f9fa;
@@ -92,17 +93,41 @@
                 <span class="position-absolute top-50 start-50 translate-middle bg-white px-2 small text-muted">HOẶC</span>
             </div>
 
-            <button type="button" onclick="loginWithGoogle()" class="btn btn-google w-100 btn-lg d-flex align-items-center justify-content-center">
+            <div id="g_id_onload"
+                 data-client_id="@Model.GoogleClientId"
+                 data-callback="handleCredentialResponse"
+                 data-auto_prompt="false">
+            </div>
+
+            <button type="button" onclick="google.accounts.id.prompt()" class="btn btn-google w-100 btn-lg d-flex align-items-center justify-content-center">
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" style="width: 20px;" class="me-2" alt="Google" />
                 Đăng nhập bằng Google
             </button>
         </form>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        function loginWithGoogle() {
-            alert("Chức năng Google Auth đang được kết nối với Cloud API...");
-            // Lát nữa làm file Google Callback ta sẽ trỏ window.location.href = "..." vào đây
+        function handleCredentialResponse(response) {
+            // Gửi token lên Backend của bạn
+            fetch('https://localhost:7136/api/auth/staff-google-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken: response.credential })
+            })
+            .then(res => {
+                if (!res.ok) return res.json().then(err => { throw new Error(err.message); });
+                return res.json();
+            })
+            .then(data => {
+                // Lưu token vào localStorage để Dashboard dùng
+                localStorage.setItem("token", data.token);
+                // Redirect vào trang chính sau khi login xong
+                window.location.href = "/admin/dashboard";
+            })
+            .catch(err => {
+                Swal.fire("Đăng nhập Google thất bại", err.message, "error");
+            });
         }
     </script>
 </body>
