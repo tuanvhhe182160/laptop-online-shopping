@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace WebAPI.DTOs.Laptops
+namespace WebAPI.DTOsc.ProductVariants
 {
     public class LaptopUpdateDto
     {

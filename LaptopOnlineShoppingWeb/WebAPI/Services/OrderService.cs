@@ -39,54 +39,71 @@ namespace WebAPI.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var cart = await _cartRepository.GetCartByCustomerIdAsync(customerId);
-                if (cart == null || !cart.CartItems.Any())
-                {
-                    return null; // Giỏ hàng trống
-                }
+                // Lấy giỏ hàng kèm theo thông tin Variant và Giá tiền
+                var cart = await _context.Carts
+                    .Include(c => c.CartItems)
+                    .ThenInclude(ci => ci.ProductVariant)
+                    .FirstOrDefaultAsync(c => c.CustomerId == customerId);
 
-                decimal totalAmount = 0;
-                var orderDetails = new List<OrderDetail>();
+                if (cart == null || !cart.CartItems.Any()) return null;
 
-                foreach (var item in cart.CartItems)
-                {
-                    var laptop = await _context.Laptops.FindAsync(item.LaptopId);
-                    if (laptop == null || laptop.Status == false || laptop.StockQuantity < item.Quantity)
-                    {
-                        await transaction.RollbackAsync();
-                        return null; // Hết hàng hoặc không đủ
-                    }
+                // Tính tổng tiền dựa trên giá của Variant
+                decimal totalAmount = cart.CartItems.Sum(ci => ci.Quantity * ci.ProductVariant.Price);
 
-                    // Tính tiền và tạo chi tiết
-                    totalAmount += laptop.Price * item.Quantity;
-                    orderDetails.Add(new OrderDetail
-                    {
-                        LaptopId = laptop.LaptopId,
-                        Quantity = item.Quantity,
-                        UnitPrice = laptop.Price
-                    });
-
-                    // Trừ tồn kho
-                    laptop.StockQuantity -= item.Quantity;
-                    _context.Laptops.Update(laptop);
-                }
-
-                // Tạo đơn hàng
+                // 1. Tạo đơn hàng cơ sở trước để DB cấp phát OrderId
                 var order = new Order
                 {
                     CustomerId = customerId,
+                    BranchId = 1, // Tạm gán cho Chi nhánh tổng (hoặc có thể truyền từ dto.BranchId)
                     OrderDate = DateTime.Now,
                     TotalAmount = totalAmount,
                     PaymentMethod = Enum.Parse<PaymentMethod>(dto.PaymentMethod),
                     PaymentStatus = false,
-                    OrderStatus = OrderStatus.Pending,
-                    OrderDetails = orderDetails
+                    OrderStatus = OrderStatus.Pending
                 };
 
                 await _orderRepository.AddAsync(order);
+                await _context.SaveChangesAsync(); // Lấy OrderId
 
-                // Dọn giỏ hàng
-                cart.CartItems.Clear();
+                var orderDetails = new List<OrderDetail>();
+
+                // 2. Quét giỏ hàng và xử lý Race Condition (Trừ kho vật lý)
+                foreach (var item in cart.CartItems)
+                {
+                    // Lệnh SQL Nguyên tử: Khóa và cập nhật chính xác số lượng máy đang InStock
+                    var updateSql = @"
+                        UPDATE TOP (@p0) PhysicalProducts 
+                        SET Status = 'Sold', OrderId = @p1 
+                        WHERE VariantId = @p2 AND Status = 'InStock'";
+
+                    var rowsAffected = await _context.Database.ExecuteSqlRawAsync(
+                        updateSql,
+                        item.Quantity,    // Số lượng khách mua
+                        order.OrderId,    // Mã đơn vừa sinh ra
+                        item.VariantId    // Cấu hình máy
+                    );
+
+                    // Nếu số máy update thành công ít hơn số lượng khách cần -> Hết hàng
+                    if (rowsAffected < item.Quantity)
+                    {
+                        await transaction.RollbackAsync();
+                        return null; // Khách hàng chậm tay đã mất phần, hủy toàn bộ giao dịch
+                    }
+
+                    // Lưu chi tiết lịch sử giá
+                    orderDetails.Add(new OrderDetail
+                    {
+                        OrderId = order.OrderId,
+                        VariantId = item.VariantId,
+                        Quantity = item.Quantity,
+                        UnitPrice = item.ProductVariant.Price
+                    });
+                }
+
+                await _context.OrderDetails.AddRangeAsync(orderDetails);
+
+                // Dọn sạch giỏ hàng
+                _context.CartItems.RemoveRange(cart.CartItems);
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -99,7 +116,8 @@ namespace WebAPI.Services
                     TotalAmount = order.TotalAmount,
                     PaymentMethod = order.PaymentMethod.ToString(),
                     PaymentStatus = order.PaymentStatus,
-                    OrderStatus = order.OrderStatus.ToString()
+                    OrderStatus = order.OrderStatus.ToString(),
+                    BranchId = order.BranchId
                 };
             }
             catch
@@ -114,36 +132,50 @@ namespace WebAPI.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var laptop = await _context.Laptops.FindAsync(dto.LaptopId);
-                if (laptop == null || laptop.Status == false || laptop.StockQuantity < dto.Quantity)
-                {
-                    return null; // Lỗi hết hàng
-                }
+                // Lưu ý: DTO của bạn cần đổi VariantId thành VariantId
+                var variant = await _context.ProductVariants.FindAsync(dto.VariantId);
+                if (variant == null) return null;
 
-                decimal totalAmount = laptop.Price * dto.Quantity;
-
-                var orderDetail = new OrderDetail
-                {
-                    LaptopId = laptop.LaptopId,
-                    Quantity = dto.Quantity,
-                    UnitPrice = laptop.Price
-                };
-
-                laptop.StockQuantity -= dto.Quantity;
-                _context.Laptops.Update(laptop);
+                decimal totalAmount = variant.Price * dto.Quantity;
 
                 var order = new Order
                 {
                     CustomerId = customerId,
+                    BranchId = 1, // Mặc định hoặc lấy từ DTO
                     OrderDate = DateTime.Now,
                     TotalAmount = totalAmount,
                     PaymentMethod = Enum.Parse<PaymentMethod>(dto.PaymentMethod),
                     PaymentStatus = false,
-                    OrderStatus = OrderStatus.Pending,
-                    OrderDetails = new List<OrderDetail> { orderDetail }
+                    OrderStatus = OrderStatus.Pending
                 };
 
                 await _orderRepository.AddAsync(order);
+                await _context.SaveChangesAsync();
+
+                // Xử lý Race Condition cho đơn mua trực tiếp
+                var updateSql = @"
+                    UPDATE TOP (@p0) PhysicalProducts 
+                    SET Status = 'Sold', OrderId = @p1 
+                    WHERE VariantId = @p2 AND Status = 'InStock'";
+
+                var rowsAffected = await _context.Database.ExecuteSqlRawAsync(
+                    updateSql, dto.Quantity, order.OrderId, dto.VariantId);
+
+                if (rowsAffected < dto.Quantity)
+                {
+                    await transaction.RollbackAsync();
+                    return null; // Hết hàng vật lý
+                }
+
+                var orderDetail = new OrderDetail
+                {
+                    OrderId = order.OrderId,
+                    VariantId = dto.VariantId,
+                    Quantity = dto.Quantity,
+                    UnitPrice = variant.Price
+                };
+
+                await _context.OrderDetails.AddAsync(orderDetail);
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
@@ -155,7 +187,8 @@ namespace WebAPI.Services
                     TotalAmount = order.TotalAmount,
                     PaymentMethod = order.PaymentMethod.ToString(),
                     PaymentStatus = order.PaymentStatus,
-                    OrderStatus = order.OrderStatus.ToString()
+                    OrderStatus = order.OrderStatus.ToString(),
+                    BranchId = order.BranchId
                 };
             }
             catch
@@ -176,14 +209,26 @@ namespace WebAPI.Services
                 TotalAmount = o.TotalAmount,
                 PaymentMethod = o.PaymentMethod.ToString(),
                 PaymentStatus = o.PaymentStatus,
-                OrderStatus = o.OrderStatus.ToString()
+                OrderStatus = o.OrderStatus.ToString(),
+                BranchId = o.BranchId
             });
         }
 
         public async Task<OrderWithDetailsResponseDTO?> GetOrderDetailsAsync(int orderId)
         {
-            var order = await _orderRepository.GetOrderWithDetailsAsync(orderId);
+            // Bổ sung Include để truy xuất tới tận tên sản phẩm gốc (Product) qua Variant
+            var order = await _context.Orders
+                .Include(o => o.Customer)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.ProductVariant)
+                        .ThenInclude(pv => pv.Product)
+                .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
             if (order == null) return null;
+
+            var physicalProducts = await _context.PhysicalProducts
+                .Where(p => p.OrderId == orderId)
+                .ToListAsync();
 
             return new OrderWithDetailsResponseDTO
             {
@@ -195,12 +240,17 @@ namespace WebAPI.Services
                 PaymentMethod = order.PaymentMethod.ToString(),
                 PaymentStatus = order.PaymentStatus,
                 OrderStatus = order.OrderStatus.ToString(),
+                BranchId = order.BranchId,
                 Details = order.OrderDetails.Select(od => new OrderDetailResponseDTO
                 {
-                    LaptopId = od.LaptopId,
-                    LaptopName = od.Laptop.LaptopName,
+                    VariantId = od.VariantId, // Đổi từ VariantId sang VariantId
+                    LaptopName = od.ProductVariant.Product.ProductName + $" ({od.ProductVariant.RAM} - {od.ProductVariant.SSD})",
                     Quantity = od.Quantity,
-                    UnitPrice = od.UnitPrice
+                    UnitPrice = od.UnitPrice,
+                    SerialNumbers = physicalProducts
+                        .Where(p => p.VariantId == od.VariantId)
+                        .Select(p => p.SerialNumber)
+                        .ToList()
                 }).ToList()
             };
         }
@@ -217,7 +267,8 @@ namespace WebAPI.Services
                 TotalAmount = o.TotalAmount,
                 PaymentMethod = o.PaymentMethod.ToString(),
                 PaymentStatus = o.PaymentStatus,
-                OrderStatus = o.OrderStatus.ToString()
+                OrderStatus = o.OrderStatus.ToString(),
+                BranchId = o.BranchId
             });
         }
 

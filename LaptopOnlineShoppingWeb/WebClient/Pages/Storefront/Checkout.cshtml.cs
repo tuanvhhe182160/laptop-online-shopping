@@ -22,13 +22,13 @@ namespace WebClient.Pages.Storefront
         public OrderDetailViewModel? DirectPurchaseItem { get; set; }
 
         public bool IsBuyNow { get; set; }
-        public int LaptopId { get; set; }
+        public int VariantId { get; set; }
         public int Quantity { get; set; }
 
-        public async Task<IActionResult> OnGetAsync([FromQuery] bool buynow = false, [FromQuery] int laptopid = 0, [FromQuery] int qty = 0)
+        public async Task<IActionResult> OnGetAsync([FromQuery] bool buynow = false, [FromQuery] int variantid = 0, [FromQuery] int qty = 0)
         {
             IsBuyNow = buynow;
-            LaptopId = laptopid;
+            VariantId = variantid;
             Quantity = qty;
 
             var client = _httpClientFactory.CreateClient("WebAPI");
@@ -39,9 +39,9 @@ namespace WebClient.Pages.Storefront
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             }
 
-            if (IsBuyNow && LaptopId > 0 && Quantity > 0)
+            if (IsBuyNow && VariantId > 0 && Quantity > 0)
             {
-                var response = await client.GetAsync($"/api/laptops/{LaptopId}");
+                var response = await client.GetAsync($"/api/laptops/{VariantId}");
                 if (response.IsSuccessStatusCode)
                 {
                     var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -51,7 +51,7 @@ namespace WebClient.Pages.Storefront
 
                     DirectPurchaseItem = new OrderDetailViewModel
                     {
-                        LaptopId = LaptopId,
+                        VariantId = VariantId,
                         LaptopName = laptopName ?? "Laptop",
                         UnitPrice = price,
                         Quantity = Quantity,

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.EntityFrameworkCore;
 using WebAPI.Data;
-using WebAPI.DTOs.Laptops;
+using WebAPI.DTOsc.ProductVariants;
 using WebAPI.Entities;
 
 namespace WebAPI.Controllers
@@ -25,7 +25,7 @@ namespace WebAPI.Controllers
         [EnableQuery]
         public IActionResult Get()
         {
-            return Ok(_context.Laptops);
+            return Ok(_contextc.ProductVariants);
         }
 
         // GET: odata/Laptops(1) (OData Queryable)
@@ -33,7 +33,7 @@ namespace WebAPI.Controllers
         [EnableQuery]
         public async Task<IActionResult> Get([FromRoute] int key)
         {
-            var laptop = await _context.Laptops.FindAsync(key);
+            var laptop = await _contextc.ProductVariants.FindAsync(key);
             if (laptop == null)
             {
                 return NotFound(new { message = "Không tìm thấy laptop này." });
@@ -45,9 +45,9 @@ namespace WebAPI.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var laptop = await _context.Laptops
+            var laptop = await _contextc.ProductVariants
                 .Include(l => l.Category)
-                .FirstOrDefaultAsync(l => l.LaptopId == id);
+                .FirstOrDefaultAsync(l => l.VariantId == id);
             
             if (laptop == null)
             {
@@ -64,15 +64,15 @@ namespace WebAPI.Controllers
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             // Check duplicate code
-            if (await _context.Laptops.AnyAsync(l => l.LaptopCode == dto.LaptopCode))
+            if (await _contextc.ProductVariants.AnyAsync(l => lc.ProductVariantCode == dtoc.ProductVariantCode))
             {
                 return BadRequest(new { message = "Mã laptop đã tồn tại." });
             }
 
             var laptop = new Laptop
             {
-                LaptopCode = dto.LaptopCode,
-                LaptopName = dto.LaptopName,
+                LaptopCode = dtoc.ProductVariantCode,
+                LaptopName = dtoc.ProductVariantName,
                 Price = dto.Price,
                 StockQuantity = dto.StockQuantity,
                 CategoryId = dto.CategoryId,
@@ -80,10 +80,10 @@ namespace WebAPI.Controllers
                 CreatedDate = DateTime.Now
             };
 
-            await _context.Laptops.AddAsync(laptop);
+            await _contextc.ProductVariants.AddAsync(laptop);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetById), new { id = laptop.LaptopId }, laptop);
+            return CreatedAtAction(nameof(GetById), new { id = laptop.VariantId }, laptop);
         }
 
         // PUT: api/Laptops/{id}
@@ -93,17 +93,17 @@ namespace WebAPI.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var laptop = await _context.Laptops.FindAsync(id);
+            var laptop = await _contextc.ProductVariants.FindAsync(id);
             if (laptop == null) return NotFound(new { message = "Không tìm thấy laptop này." });
 
             // Check duplicate code (excluding current laptop)
-            if (await _context.Laptops.AnyAsync(l => l.LaptopCode == dto.LaptopCode && l.LaptopId != id))
+            if (await _contextc.ProductVariants.AnyAsync(l => lc.ProductVariantCode == dtoc.ProductVariantCode && l.VariantId != id))
             {
                 return BadRequest(new { message = "Mã laptop đã tồn tại ở sản phẩm khác." });
             }
 
-            laptop.LaptopCode = dto.LaptopCode;
-            laptop.LaptopName = dto.LaptopName;
+            laptopc.ProductVariantCode = dtoc.ProductVariantCode;
+            laptopc.ProductVariantName = dtoc.ProductVariantName;
             laptop.Price = dto.Price;
             laptop.StockQuantity = dto.StockQuantity;
             laptop.CategoryId = dto.CategoryId;
@@ -120,12 +120,12 @@ namespace WebAPI.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
-            var laptop = await _context.Laptops.FindAsync(id);
+            var laptop = await _contextc.ProductVariants.FindAsync(id);
             if (laptop == null) return NotFound(new { message = "Không tìm thấy laptop." });
 
             // Logic Xóa: Kiểm tra xem Laptop đã có trong OrderDetails chưa. 
             // Nếu có thì chỉ update Status = false (ngừng kinh doanh), ngược lại cho xóa cứng.
-            bool hasOrders = await _context.OrderDetails.AnyAsync(od => od.LaptopId == id);
+            bool hasOrders = await _context.OrderDetails.AnyAsync(od => od.VariantId == id);
             if (hasOrders)
             {
                 laptop.Status = false; // Xóa mềm
@@ -135,7 +135,7 @@ namespace WebAPI.Controllers
             }
             else
             {
-                _context.Laptops.Remove(laptop);
+                _contextc.ProductVariants.Remove(laptop);
                 await _context.SaveChangesAsync();
                 return Ok(new { message = "Đã xóa sản phẩm thành công khỏi hệ thống.", isSoftDeleted = false });
             }

@@ -1,5 +1,5 @@
 // Đọc cấu hình từ thẻ body
-const API_BASE = 'https://localhost:7136';
+const API_BASE = 'https://localhost:7136'; // Hãy đảm bảo port này khớp với project WebAPI của bạn
 const TOKEN = document.body.getAttribute('data-token');
 
 // Hàm tạo Header có chứa Token bảo mật
@@ -11,8 +11,9 @@ function getHeaders() {
     return headers;
 }
 
-async function addToCart(laptopId, quantity) {
-    const payload = { laptopId, quantity };
+// ĐÃ SỬA: Thay laptopId bằng variantId
+async function addToCart(variantId, quantity) {
+    const payload = { variantId, quantity };
     try {
         const response = await fetch(`${API_BASE}/api/Cart/items`, {
             method: 'POST',
@@ -31,12 +32,13 @@ async function addToCart(laptopId, quantity) {
     }
 }
 
-async function updateCart(laptopId, quantity) {
+// ĐÃ SỬA: Thay laptopId bằng variantId và thêm /api/ vào URL
+async function updateCart(variantId, quantity) {
     if (quantity <= 0) { alert('Số lượng phải lớn hơn 0'); return; }
-    const payload = { laptopId, quantity: parseInt(quantity) };
+    const payload = { variantId, quantity: parseInt(quantity) };
 
     try {
-        const response = await fetch(`${API_BASE}/Cart/items`, {
+        const response = await fetch(`${API_BASE}/api/Cart/items`, {
             method: 'PUT',
             headers: getHeaders(), // Đính kèm Token
             body: JSON.stringify(payload)
@@ -48,10 +50,11 @@ async function updateCart(laptopId, quantity) {
     } catch (e) { console.error(e); }
 }
 
-async function removeFromCart(laptopId) {
+// ĐÃ SỬA: Thay laptopId bằng variantId và thêm /api/ vào URL
+async function removeFromCart(variantId) {
     if (!confirm('Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?')) return;
     try {
-        const response = await fetch(`${API_BASE}/Cart/items/${laptopId}`, {
+        const response = await fetch(`${API_BASE}/api/Cart/items/${variantId}`, {
             method: 'DELETE',
             headers: getHeaders() // Đính kèm Token
         });
@@ -61,10 +64,11 @@ async function removeFromCart(laptopId) {
     } catch (e) { console.error(e); }
 }
 
+// ĐÃ SỬA: Thêm /api/ vào URL
 async function getCartCount() {
     if (!TOKEN) return 0; // Nếu không có token thì khỏi gọi API cho tốn tài nguyên
     try {
-        const response = await fetch(`${API_BASE}/Cart`, {
+        const response = await fetch(`${API_BASE}/api/Cart`, {
             headers: getHeaders()
         });
 

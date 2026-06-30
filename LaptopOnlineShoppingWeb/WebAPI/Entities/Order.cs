@@ -36,6 +36,8 @@ public partial class Order
     [JsonIgnore]
     public virtual Customer Customer { get; set; } = null!;
 
+    public int? BranchId { get; set; }
+
     [JsonIgnore]
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
 }

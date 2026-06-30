@@ -9,7 +9,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using WebAPI.Entities;
 
-namespace WebClient.Pages.Admin.Laptops
+namespace WebClient.Pages.Adminc.ProductVariants
 {
     [Authorize(Roles = "Admin,Staff")]
     public class IndexModel : PageModel

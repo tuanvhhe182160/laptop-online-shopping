@@ -9,7 +9,7 @@ public partial class Laptop
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public int LaptopId { get; set; }
+    public int VariantId { get; set; }
 
     [Required(ErrorMessage = "Mã laptop là bắt buộc.")]
     [StringLength(20, ErrorMessage = "Mã laptop không được vượt quá 20 ký tự.")]

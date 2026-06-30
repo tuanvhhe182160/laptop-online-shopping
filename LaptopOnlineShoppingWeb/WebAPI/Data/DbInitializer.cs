@@ -66,7 +66,7 @@ namespace WebAPI.Data
             }
 
             // Seed Laptops
-            if (!context.Laptops.Any())
+            if (!contextc.ProductVariants.Any())
             {
                 var asus = context.Categories.FirstOrDefault(c => c.CategoryName == "ASUS");
                 var dell = context.Categories.FirstOrDefault(c => c.CategoryName == "Dell");
@@ -76,7 +76,7 @@ namespace WebAPI.Data
 
                 if (asus != null && dell != null && hp != null && lenovo != null && macbook != null)
                 {
-                    context.Laptops.AddRange(
+                    contextc.ProductVariants.AddRange(
                         new Laptop
                         {
                             LaptopCode = "ASUS-ROG",

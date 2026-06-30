@@ -1,5 +1,5 @@
 @page
-@model WebClient.Pages.Admin.Laptops.IndexModel
+@model WebClient.Pages.Adminc.ProductVariants.IndexModel
 @{
     ViewData["Title"] = "Quản lý sản phẩm Laptops";
     var isAdmin = User.IsInRole("Admin");
@@ -78,9 +78,9 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @if (Model.Laptops != null && Model.Laptops.Count > 0)
+                        @if (Modelc.ProductVariants != null && Modelc.ProductVariants.Count > 0)
                         {
-                            foreach (var item in Model.Laptops)
+                            foreach (var item in Modelc.ProductVariants)
                             {
                                  var fullImageUrl = (item.ImageUrl.StartsWith("http") 
                                      ? item.ImageUrl 
@@ -89,11 +89,11 @@
                                 <tr>
                                     <td class="ps-4">
                                         <div class="d-flex align-items-center justify-content-center bg-light rounded" style="width: 60px; height: 50px; overflow: hidden;">
-                                            <img src="@fullImageUrl" class="img-fluid" style="max-height: 100%; max-width: 100%; object-fit: contain;" alt="@item.LaptopName" onerror="this.onerror=null;this.src='/favicon.ico';this.style.width='25px';this.style.height='25px';" />
+                                            <img src="@fullImageUrl" class="img-fluid" style="max-height: 100%; max-width: 100%; object-fit: contain;" alt="@itemc.ProductVariantName" onerror="this.onerror=null;this.src='/favicon.ico';this.style.width='25px';this.style.height='25px';" />
                                         </div>
                                     </td>
-                                    <td><span class="badge bg-secondary-subtle text-secondary font-monospace">@item.LaptopCode</span></td>
-                                    <td class="fw-bold text-dark">@item.LaptopName</td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary font-monospace">@itemc.ProductVariantCode</span></td>
+                                    <td class="fw-bold text-dark">@itemc.ProductVariantName</td>
                                     <td>@item.Category?.CategoryName</td>
                                     <td class="fw-bold text-danger">@item.Price.ToString("N0") đ</td>
                                     <td>
@@ -118,12 +118,12 @@
                                     </td>
                                     <td class="pe-4 text-end">
                                         <div class="btn-group">
-                                            <button class="btn btn-outline-secondary btn-sm rounded-circle me-2" style="width: 32px; height: 32px; padding: 0;" onclick="openEditModal(@item.LaptopId)" title="Chỉnh sửa">
+                                            <button class="btn btn-outline-secondary btn-sm rounded-circle me-2" style="width: 32px; height: 32px; padding: 0;" onclick="openEditModal(@item.VariantId)" title="Chỉnh sửa">
                                                 <i class="bi bi-pencil-fill" style="font-size: 13px;"></i>
                                             </button>
                                             @if (isAdmin)
                                             {
-                                                <button class="btn btn-outline-danger btn-sm rounded-circle" style="width: 32px; height: 32px; padding: 0;" onclick="confirmDelete(@item.LaptopId, '@item.LaptopName')" title="Xóa">
+                                                <button class="btn btn-outline-danger btn-sm rounded-circle" style="width: 32px; height: 32px; padding: 0;" onclick="confirmDelete(@item.VariantId, '@itemc.ProductVariantName')" title="Xóa">
                                                     <i class="bi bi-trash-fill" style="font-size: 13px;"></i>
                                                 </button>
                                             }

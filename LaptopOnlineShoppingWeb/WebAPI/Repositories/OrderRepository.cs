@@ -29,7 +29,7 @@ namespace WebAPI.Repositories
             return await _context.Orders
                 .Include(o => o.Customer)
                 .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Laptop)
+                .ThenInclude(od => odc.ProductVariant)
                 .FirstOrDefaultAsync(o => o.OrderId == orderId);
         }
     }

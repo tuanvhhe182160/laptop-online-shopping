@@ -18,7 +18,7 @@ namespace WebAPI.Repositories
         {
             return await _context.Carts
                 .Include(c => c.CartItems)
-                .ThenInclude(ci => ci.Laptop)
+                .ThenInclude(ci => cic.ProductVariant)
                 .FirstOrDefaultAsync(c => c.CustomerId == customerId);
         }
     }

@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model WebClient.Pages.Admin.Orders.IndexModel
 @using WebAPI.Enums
 @using WebClient.Models @* Khai báo để sử dụng enum OrderStatus ngoài giao diện *@
@@ -21,6 +21,7 @@
                             <th class="ps-3">Mã ĐH</th>
                             <th>Ngày đặt</th>
                             <th>Khách hàng</th>
+                            <th>Chi nhánh</th>
                             <th>Tổng tiền</th>
                             <th>Trạng thái hiện tại</th>
                             <th class="text-center">Cập nhật trạng thái</th>
@@ -35,6 +36,7 @@
                                     <td class="ps-3 fw-bold">#@order.OrderId</td>
                                     <td>@(order.OrderDate?.ToString("dd/MM/yyyy HH:mm"))</td>
                                     <td>@order.CustomerName</td>
+                                    <td>@(order.BranchId.HasValue ? $"CN {order.BranchId}" : "Chưa phân công")</td>
                                     <td class="text-danger fw-bold">@order.TotalAmount.ToString("N0") đ</td>
                                     <td>
                                         @* Ép kiểu hoặc so sánh trực tiếp với enum để phân loại màu badge *@
@@ -72,7 +74,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">
+                                <td colspan="7" class="text-center py-4 text-muted">
                                     Chưa có đơn hàng nào trong hệ thống.
                                 </td>
                             </tr>
