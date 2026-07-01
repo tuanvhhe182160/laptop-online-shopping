@@ -21,9 +21,9 @@
                                 <option value="">-- Vui lòng chọn cấu hình sản phẩm --</option>
                                 @if (Model.Variants != null)
                                 {
-                                    foreach (var v in Model.Variants)
+                                    foreach (var variant in Model.Variants)
                                     {
-                                        <option value="@v.VariantId">[@v.Product?.ProductCode] @v.Product?.ProductName - @v.Cpu / @v.Ram / @v.Ssd (@v.Color)</option>
+                                        <option value="@variant.VariantId">@variant.Product.ProductName - @variant.CPU / @variant.RAM / @variant.SSD / @variant.Color</option>
                                     }
                                 }
                             </select>

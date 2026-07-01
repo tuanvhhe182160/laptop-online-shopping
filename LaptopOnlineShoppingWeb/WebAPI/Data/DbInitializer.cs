@@ -109,9 +109,9 @@ namespace WebAPI.Data
                     context.SaveChanges();
 
                     // B. Tạo Cấu hình chi tiết và Giá (ProductVariants)
-                    var v1 = new ProductVariant { ProductId = p1.ProductId, Cpu = "Core i7", Ram = "16GB", Ssd = "512GB", Color = "Eclipse Gray", Price = 28500000 };
-                    var v2 = new ProductVariant { ProductId = p2.ProductId, Cpu = "Core i9", Ram = "32GB", Ssd = "1TB", Color = "Silver", Price = 42000000 };
-                    var v3 = new ProductVariant { ProductId = p3.ProductId, Cpu = "Apple M2", Ram = "8GB", Ssd = "256GB", Color = "Midnight", Price = 26900000 };
+                    var v1 = new ProductVariant { ProductId = p1.ProductId, CPU = "Core i7", RAM = "16GB", SSD = "512GB", Color = "Eclipse Gray", Price = 28500000 };
+                    var v2 = new ProductVariant { ProductId = p2.ProductId, CPU = "Core i9", RAM = "32GB", SSD = "1TB", Color = "Silver", Price = 42000000 };
+                    var v3 = new ProductVariant { ProductId = p3.ProductId, CPU = "Apple M2", RAM = "8GB", SSD = "256GB", Color = "Midnight", Price = 26900000 };
 
                     context.ProductVariants.AddRange(v1, v2, v3);
                     context.SaveChanges();

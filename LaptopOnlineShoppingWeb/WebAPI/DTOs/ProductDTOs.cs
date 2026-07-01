@@ -22,9 +22,9 @@ namespace WebAPI.DTOs
     {
         public int VariantId { get; set; }
         public int ProductId { get; set; }
-        public string? Cpu { get; set; }
-        public string? Ram { get; set; }
-        public string? Ssd { get; set; }
+        public string? CPU { get; set; }
+        public string? RAM { get; set; }
+        public string? SSD { get; set; }
         public string? Color { get; set; }
         public decimal Price { get; set; }
 
@@ -67,9 +67,9 @@ namespace WebAPI.DTOs
         [Required(ErrorMessage = "Sản phẩm là bắt buộc")]
         public int ProductId { get; set; }
 
-        public string? Cpu { get; set; }
-        public string? Ram { get; set; }
-        public string? Ssd { get; set; }
+        public string? CPU { get; set; }
+        public string? RAM { get; set; }
+        public string? SSD { get; set; }
         public string? Color { get; set; }
 
         [Required(ErrorMessage = "Giá tiền là bắt buộc")]
@@ -79,9 +79,9 @@ namespace WebAPI.DTOs
 
     public class UpdateProductVariantDto
     {
-        public string? Cpu { get; set; }
-        public string? Ram { get; set; }
-        public string? Ssd { get; set; }
+        public string? CPU { get; set; }
+        public string? RAM { get; set; }
+        public string? SSD { get; set; }
         public string? Color { get; set; }
 
         [Required(ErrorMessage = "Giá tiền là bắt buộc")]

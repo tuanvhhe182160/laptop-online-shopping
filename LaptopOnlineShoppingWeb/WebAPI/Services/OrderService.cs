@@ -57,9 +57,9 @@ namespace WebAPI.Services
                     BranchId = 1, // Tạm gán cho Chi nhánh tổng (hoặc có thể truyền từ dto.BranchId)
                     OrderDate = DateTime.Now,
                     TotalAmount = totalAmount,
-                    PaymentMethod = Enum.Parse<PaymentMethod>(dto.PaymentMethod),
+                    PaymentMethod = Enum.Parse<PaymentMethod>(dto.PaymentMethod).ToString(),
                     PaymentStatus = false,
-                    OrderStatus = OrderStatus.Pending
+                    OrderStatus = OrderStatus.Pending.ToString()
                 };
 
                 await _orderRepository.AddAsync(order);
@@ -144,9 +144,9 @@ namespace WebAPI.Services
                     BranchId = 1, // Mặc định hoặc lấy từ DTO
                     OrderDate = DateTime.Now,
                     TotalAmount = totalAmount,
-                    PaymentMethod = Enum.Parse<PaymentMethod>(dto.PaymentMethod),
+                    PaymentMethod = Enum.Parse<PaymentMethod>(dto.PaymentMethod).ToString(),
                     PaymentStatus = false,
-                    OrderStatus = OrderStatus.Pending
+                    OrderStatus = OrderStatus.Pending.ToString()
                 };
 
                 await _orderRepository.AddAsync(order);
@@ -244,7 +244,7 @@ namespace WebAPI.Services
                 Details = order.OrderDetails.Select(od => new OrderDetailResponseDTO
                 {
                     VariantId = od.VariantId, // Đổi từ VariantId sang VariantId
-                    LaptopName = od.ProductVariant.Product.ProductName + $" ({od.ProductVariant.RAM} - {od.ProductVariant.SSD})",
+                    LaptopName = od.ProductVariant.Product.ProductName + $" ({od.ProductVariant.CPU} - {od.ProductVariant.RAM} - {od.ProductVariant.SSD})",
                     Quantity = od.Quantity,
                     UnitPrice = od.UnitPrice,
                     SerialNumbers = physicalProducts
@@ -279,7 +279,7 @@ namespace WebAPI.Services
 
             if (Enum.TryParse<OrderStatus>(dto.OrderStatus, out var status))
             {
-                order.OrderStatus = status;
+                order.OrderStatus = status.ToString();
             }
             order.PaymentStatus = dto.PaymentStatus;
 

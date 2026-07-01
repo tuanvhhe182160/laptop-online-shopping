@@ -32,9 +32,9 @@
                 <div class="card-body">
                     <h6 class="fw-bold border-bottom pb-2 mb-3">Cấu hình chi tiết</h6>
                     <ul class="list-unstyled mb-0">
-                        <li class="mb-2"><strong>CPU:</strong> @Model.Variant?.Cpu</li>
-                        <li class="mb-2"><strong>RAM:</strong> @Model.Variant?.Ram</li>
-                        <li class="mb-2"><strong>Ổ cứng:</strong> @Model.Variant?.Ssd</li>
+                        <li class="mb-2"><strong>CPU:</strong> @Model.Variant?.CPU</li>
+                        <li class="mb-2"><strong>RAM:</strong> @Model.Variant?.RAM</li>
+                        <li class="mb-2"><strong>Ổ cứng:</strong> @Model.Variant?.SSD</li>
                         <li class="mb-0"><strong>Màu sắc:</strong> @Model.Variant?.Color</li>
                     </ul>
                 </div>
@@ -82,9 +82,9 @@
                             <div class="mb-3">
                                 <label class="form-label text-muted small">Đánh giá sao <span class="text-danger">*</span></label>
                                 <div class="rating-stars fs-4 text-warning" style="cursor: pointer;">
-                                    <i class="bi bi-star" data-val="1"></i>
-                                    <i class="bi bi-star" data-val="2"></i>
-                                    <i class="bi bi-star" data-val="3"></i>
+                                    <span class="badge bg-secondary">@Model.Variant?.CPU</span>
+                                    <span class="badge bg-secondary">@Model.Variant?.RAM</span>
+                                    <span class="badge bg-secondary">@Model.Variant?.SSD</span>
                                     <i class="bi bi-star" data-val="4"></i>
                                     <i class="bi bi-star" data-val="5"></i>
                                 </div>

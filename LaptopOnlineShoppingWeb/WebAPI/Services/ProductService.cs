@@ -134,9 +134,9 @@ namespace WebAPI.Services
             var variant = new ProductVariant
             {
                 ProductId = dto.ProductId,
-                Cpu = dto.Cpu,
-                Ram = dto.Ram,
-                Ssd = dto.Ssd,
+                CPU = dto.CPU,
+                RAM = dto.RAM,
+                SSD = dto.SSD,
                 Color = dto.Color,
                 Price = dto.Price
             };
@@ -152,9 +152,9 @@ namespace WebAPI.Services
             var variant = await _variantRepository.GetByIdAsync(id);
             if (variant == null) return false;
 
-            variant.Cpu = dto.Cpu;
-            variant.Ram = dto.Ram;
-            variant.Ssd = dto.Ssd;
+            variant.CPU = dto.CPU;
+            variant.RAM = dto.RAM;
+            variant.SSD = dto.SSD;
             variant.Color = dto.Color;
             variant.Price = dto.Price;
 
@@ -201,9 +201,9 @@ namespace WebAPI.Services
             {
                 VariantId = variant.VariantId,
                 ProductId = variant.ProductId,
-                Cpu = variant.Cpu,
-                Ram = variant.Ram,
-                Ssd = variant.Ssd,
+                CPU = variant.CPU,
+                RAM = variant.RAM,
+                SSD = variant.SSD,
                 Color = variant.Color,
                 Price = variant.Price,
                 InStockCount = variant.PhysicalProducts?.Count(p => p.Status == "InStock") ?? 0

@@ -94,7 +94,7 @@ namespace WebAPI.Controllers
         {
             var topProducts = await _context.OrderDetails
                 .Where(od => od.Order.OrderStatus == OrderStatus.Delivered.ToString())
-                .GroupBy(od => od.Variant.Product.ProductName)
+                .GroupBy(od => od.ProductVariant.Product.ProductName)
                 .Select(g => new TopProductDto
                 {
                     ProductName = g.Key,
