@@ -1,0 +1,103 @@
+@page
+@model WebClient.Pages.Admin.PhysicalProducts.IndexModel
+@{
+    ViewData["Title"] = "Quản lý Seri / Tồn kho";
+    Layout = "~/Pages/Shared/_AdminLayout.cshtml";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4 fw-bold">Quản lý Seri / Tồn kho</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="/Admin/Dashboard">Dashboard</a></li>
+        <li class="breadcrumb-item active">Seri / Tồn kho</li>
+    </ol>
+
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-box-seam me-2"></i>Danh sách Seri thiết bị</h5>
+            <a href="/BackOffice/Warehouse/Import" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-circle me-1"></i> Nhập kho mới
+            </a>
+        </div>
+        <div class="card-body bg-light">
+            <!-- Filter Section -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <input type="text" id="filter_search" class="form-control" placeholder="Tìm theo Mã Seri..." />
+                </div>
+                <div class="col-md-3">
+                    <select id="filter_status" class="form-select">
+                        <option value="">-- Tất cả trạng thái --</option>
+                        <option value="InStock">Trong kho (InStock)</option>
+                        <option value="Sold">Đã bán (Sold)</option>
+                        <option value="Defective">Lỗi/Hỏng (Defective)</option>
+                        <option value="Lost">Thất lạc (Lost)</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="filter_branch" class="form-select">
+                        <option value="">-- Tất cả chi nhánh --</option>
+                        <!-- Thêm chi nhánh động qua JS -->
+                    </select>
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button class="btn btn-secondary" onclick="resetFilters()">
+                        <i class="bi bi-arrow-counterclockwise"></i> Đặt lại
+                    </button>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-responsive bg-white p-3 rounded-3 shadow-sm">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã Seri</th>
+                            <th>Sản phẩm & Cấu hình</th>
+                            <th>Chi nhánh</th>
+                            <th>Đơn hàng</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="physicalProductList">
+                        <!-- Data will be loaded via JS -->
+                        <tr><td colspan="6" class="text-center text-muted">Đang tải dữ liệu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Change Status Modal -->
+<div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title fw-bold">Đổi trạng thái Seri: <span id="modal_serialNumber" class="text-primary"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <input type="hidden" id="modal_physicalId" />
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Trạng thái mới <span class="text-danger">*</span></label>
+                    <select id="modal_newStatus" class="form-select">
+                        <option value="InStock">Trong kho (InStock)</option>
+                        <option value="Sold">Đã bán (Sold)</option>
+                        <option value="Defective">Lỗi/Hỏng (Defective)</option>
+                        <option value="Lost">Thất lạc (Lost)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-warning px-4" onclick="saveStatus()">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/admin-physical-products.js" asp-append-version="true"></script>
+}

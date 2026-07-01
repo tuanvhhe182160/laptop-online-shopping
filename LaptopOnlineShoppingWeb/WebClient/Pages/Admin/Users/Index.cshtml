@@ -1,59 +1,93 @@
 ﻿@page
 @model WebClient.Pages.Admin.Users.IndexModel
 @{
-    ViewData["Title"] = "Quản lý Nhân sự";
+    ViewData["Title"] = "Quản lý Nhân sự & Chi nhánh";
     Layout = "_AdminLayout";
 }
 
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold">Danh sách Nhân sự</h3>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
+        <div>
+            <h3 class="fw-bold mb-0">Danh sách Nhân sự</h3>
+            <p class="text-muted small">Quản lý định danh, Vai trò và phân bổ Chi nhánh trực thuộc</p>
+        </div>
+        <button class="btn btn-primary shadow-sm fw-bold" 
+            data-bs-toggle="modal" 
+            data-bs-target="#userModal" 
+            onclick="openCreateModal()">
             + Thêm nhân viên
         </button>
     </div>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-body">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-secondary text-uppercase small fw-bold">
                     <tr>
-                        <th>ID</th>
+                        <th class="ps-4">ID</th>
                         <th>Tài khoản</th>
                         <th>Họ và Tên</th>
                         <th>Email</th>
                         <th>Quyền</th>
+                        <th>Chi nhánh trực thuộc</th>
                         <th>Trạng thái</th>
-                        <th class="text-end">Thao tác</th>
+                        <th class="text-end pe-4">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
+                    @if (Model.Users.Count == 0)
+                    {
+                        <tr><td colspan="8" class="text-center py-4 text-muted">Chưa có dữ liệu nhân sự.</td></tr>
+                    }
                     @foreach (var user in Model.Users)
                     {
-                        <tr>
-                            <td>@user.UserId</td>
-                            <td class="fw-bold">@user.Username</td>
+                        <tr class="@(!user.IsActive ? "table-light text-muted" : "")">
+                            <td class="ps-4">@user.UserId</td>
+                            <td class="fw-bold text-dark">@user.Username</td>
                             <td>@user.FullName</td>
                             <td>@user.Email</td>
-                            <td><span class="badge bg-secondary">@user.RoleName</span></td>
+                            <td>
+                                @{
+                                    var bgCol = user.RoleName == "Admin" ? "danger" : user.RoleName == "WarehouseManager" ? "success" : "primary";
+                                }
+                                <span class="badge bg-@bgCol-subtle text-@bgCol fw-bold px-2 py-1">@user.RoleName</span>
+                            </td>
+                            <td>
+                                <i class="bi bi-geo-alt-fill text-secondary me-1"></i>
+                                <strong>@(user.BranchName ?? "Toàn Server (Trụ sở)")</strong>
+                            </td>
                             <td>
                                 @if (user.IsActive)
                                 {
-                                    <span class="badge bg-success">Hoạt động</span>
+                                    <span class="badge bg-success rounded-pill">Hoạt động</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-danger">Đã khóa</span>
+                                    <span class="badge bg-danger rounded-pill">Đã khóa</span>
                                 }
                             </td>
-                            <td class="text-end">
-                                <a asp-page="./Details" asp-route-id="@user.UserId" class="btn btn-sm btn-outline-info me-1">
+                            <td class="text-end pe-4">
+                                <button class="btn btn-sm btn-outline-warning me-1"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#userModal"
+                                        onclick="openEditModal(this)"
+                                        data-id="@user.UserId"
+                                        data-username="@user.Username"
+                                        data-fullname="@user.FullName"
+                                        data-email="@user.Email"
+                                        data-role="@user.RoleId"
+                                        data-branch="@user.BranchId"
+                                        data-active="@user.IsActive">
+                                    Sửa
+                                </button>
+
+                                <a asp-page="./Details" asp-route-id="@user.UserId" class="btn btn-sm btn-outline-info me-1 fw-medium">
                                     Chi tiết
                                 </a>
 
                                 <form method="post" asp-page-handler="Toggle" class="d-inline" onsubmit="if(this.submitted) return false; this.submitted = true; return true;">
                                     <input type="hidden" name="id" value="@user.UserId" />
-                                    <button type="submit" class="btn btn-sm @(user.IsActive ? "btn-outline-danger" : "btn-outline-success")">
+                                    <button type="submit" class="btn btn-sm @(user.IsActive ? "btn-outline-danger" : "btn-outline-success") fw-medium">
                                         @(user.IsActive ? "Khóa" : "Mở khóa")
                                     </button>
                                 </form>
@@ -66,120 +100,287 @@
     </div>
 </div>
 
-<div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold" id="createUserModalLabel">Thêm Nhân sự mới</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+
+            <!-- HEADER -->
+            <div class="modal-header bg-dark text-white p-4">
+                <h5 class="modal-title fw-bold" id="modalTitle">
+                    Thêm Nhân sự mới
+                </h5>
+
+                <button type="button"
+                        class="btn-close btn-close-white"
+                        data-bs-dismiss="modal">
+                </button>
             </div>
-            <form method="post" asp-page-handler="Create">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="NewUser_Username" class="form-label">Tên đăng nhập</label>
-                        <input type="text" id="NewUser_Username" name="NewUser.Username" class="form-control" required />
-                    </div>
 
-                    <div class="mb-3">
-                        <label for="NewUser_Password" class="form-label">Mật khẩu</label>
-                        <input type="password" id="NewUser_Password" name="NewUser.Password" class="form-control" required />
-                    </div>
+            <!-- FORM -->
+            <form method="post" id="userForm">
 
-                    <div class="mb-3">
-                        <label for="NewUser_FullName" class="form-label">Họ và tên</label>
-                        <input type="text" id="NewUser_FullName" name="NewUser.FullName" class="form-control" required />
-                    </div>
+                <input type="hidden" asp-for="UserForm.UserId" />
 
-                    <div class="mb-3">
-                        <label for="NewUser_Email" class="form-label">Email</label>
-                        <input type="email" id="NewUser_Email" name="NewUser.Email" class="form-control" required />
-                    </div>
+                <div class="modal-body p-4">
 
-                    <div class="mb-3">
-                        <label for="NewUser_RoleId" class="form-label">Quyền hạn</label>
-                        <select id="NewUser_RoleId" name="NewUser.RoleId" class="form-select" required>
-                            <option value="">-- Chọn quyền --</option>
-                            @foreach (var role in Model.Roles)
-                            {
-                                <option value="@role.RoleId">@role.RoleName</option>
-                            }
-                        </select>
-                    </div>
+                    <div class="row g-3">
 
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" asp-for="NewUser.IsActive" checked />
-                        <label class="form-check-label" asp-for="NewUser.IsActive">Kích hoạt tài khoản</label>
+                        <!-- Username -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">
+                                TÊN ĐĂNG NHẬP *
+                            </label>
+
+                            <input asp-for="UserForm.Username"
+                                   class="form-control fw-bold"
+                                   placeholder="VD: staff_01..." />
+                        </div>
+
+                        <!-- PASSWORD (chỉ Create) -->
+                        <div class="col-md-6" id="passwordGroup">
+                            <label class="form-label small fw-bold text-muted">
+                                MẬT KHẨU *
+                            </label>
+
+                            <input asp-for="UserForm.Password"
+                                   type="password"
+                                   class="form-control"
+                                   placeholder="••••••••" />
+                        </div>
+
+                        <!-- FullName -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">
+                                HỌ VÀ TÊN *
+                            </label>
+
+                            <input asp-for="UserForm.FullName"
+                                   class="form-control" />
+                        </div>
+
+                        <!-- Email -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">
+                                EMAIL *
+                            </label>
+
+                            <input asp-for="UserForm.Email"
+                                   class="form-control" />
+                        </div>
+
+                        <!-- Role -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">
+                                QUYỀN HẠN
+                            </label>
+
+                            <select asp-for="UserForm.RoleId"
+                                    class="form-select"
+                                    id="UserForm_RoleId"
+                                    onchange="checkAdminRole(this)">
+
+                                <option value="">-- Chọn quyền --</option>
+
+                                @foreach (var role in Model.Roles)
+                                {
+                                    <option value="@role.RoleId"
+                                            data-code="@role.RoleName">
+                                        @role.RoleName
+                                    </option>
+                                }
+
+                            </select>
+                        </div>
+
+                        <!-- Branch -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted"
+                                   id="lbl-branch">
+                                CHI NHÁNH LÀM VIỆC
+                            </label>
+
+                            <select asp-for="UserForm.BranchId"
+                                    class="form-select"
+                                    id="UserForm_BranchId">
+
+                                <option value="">-- Trụ sở chính --</option>
+
+                                @foreach (var b in Model.Branches)
+                                {
+                                    <option value="@b.BranchId">
+                                        @b.BranchName
+                                    </option>
+                                }
+
+                            </select>
+                        </div>
+
+                        <!-- IsActive -->
+                        <div class="col-md-12 mt-3 border-top pt-3">
+
+                            <div class="form-check form-switch fs-5">
+
+                                <input class="form-check-input"
+                                       asp-for="UserForm.IsActive" />
+
+                                <label class="form-check-label">
+                                    Kích hoạt tài khoản
+                                </label>
+
+                            </div>
+
+                        </div>
+
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-primary">Lưu thông tin</button>
+                <!-- FOOTER -->
+                <div class="modal-footer bg-light p-3">
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                        Hủy
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-primary fw-bold">
+                        Lưu thông tin
+                    </button>
+
                 </div>
+
             </form>
+
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // JS Khóa chéo dropdown khi chọn Role Admin
+        function checkAdminRole(select) {
+            const roleCode = select.options[select.selectedIndex]?.getAttribute("data-code");
+            const branchDropdown = document.getElementById("UserForm_BranchId");
+            const branchLabel = document.getElementById("lbl-branch");
+
+            if (!branchDropdown || !branchLabel) return;
+
+            if (roleCode === "Admin") {
+                branchDropdown.value = "";
+                branchDropdown.disabled = true;
+                branchLabel.innerHTML = `CHI NHÁNH <span class="badge bg-danger ms-1">Admin không phân chi nhánh</span>`;
+            } else {
+                branchDropdown.disabled = false;
+                branchLabel.innerHTML = `CHI NHÁNH LÀM VIỆC`;
+            }
+        }
+
+        function resetUserForm() {
+            const branchDropdown = document.getElementById("UserForm_BranchId");
+            const branchLabel = document.getElementById("lbl-branch");
+            const roleSelect = document.getElementById("UserForm_RoleId");
+            const passwordInput = document.querySelector("#UserForm_Password");
+
+            if (branchDropdown) {
+                branchDropdown.disabled = false;
+                branchDropdown.value = "";
+            }
+
+            if (branchLabel) {
+                branchLabel.innerHTML = "CHI NHÁNH LÀM VIỆC";
+            }
+
+            if (roleSelect) {
+                roleSelect.value = "";
+            }
+
+            if (passwordInput) {
+            passwordInput.value = "";
+            }
+        }
+
+        function openCreateModal() {
+
+            document.getElementById("modalTitle").innerText = "Thêm Nhân sự mới";
+
+            document.getElementById("userForm").action = "?handler=Create";
+
+            document.getElementById("passwordGroup").style.display = "block";
+
+            document.getElementById("UserForm_UserId").value = 0;
+
+            document.getElementById("userForm").reset();
+
+            resetUserForm();
+        }
+
+        function openEditModal(btn) {
+            if (!btn) return;
+
+            document.getElementById("modalTitle").innerText = "Cập nhật nhân viên";
+            document.getElementById("userForm").action = "?handler=Edit";
+            document.getElementById("passwordGroup").style.display = "none";
+
+            document.getElementById("UserForm_UserId").value = btn.dataset.id ?? "";
+            document.getElementById("UserForm_Username").value = btn.dataset.username ?? "";
+            document.getElementById("UserForm_FullName").value = btn.dataset.fullname ?? "";
+            document.getElementById("UserForm_Email").value = btn.dataset.email ?? "";
+
+            const roleSelect = document.getElementById("UserForm_RoleId");
+            if (roleSelect) {
+            roleSelect.value = btn.dataset.role ?? "";
+            checkAdminRole(roleSelect);
+            }
+
+            document.getElementById("UserForm_BranchId").value = btn.dataset.branch ?? "";
+            document.getElementById("UserForm_IsActive").checked = btn.dataset.active === "True";
+
+
+        }
+    </script>
+
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            // ==========================================
-            // 1. XỬ LÝ THÔNG BÁO TỪ BACKEND TRẢ VỀ
-            // ==========================================
-            var successMsg = '@Html.Raw(TempData["SuccessMessage"])';
-            var errorMsg = '@Html.Raw(TempData["ErrorMessage"])';
+            var successMsg = '@Html.Raw(TempData["SuccessMessage"]?.ToString() ?? "")';
+            var errorMsg = '@Html.Raw(TempData["ErrorMessage"]?.ToString() ?? "")';
 
-            if (successMsg && successMsg.trim() !== '') {
+            if (successMsg) {
                 Swal.fire({
                     icon: 'success',
                     title: 'Thành công',
                     text: successMsg,
-                    timer: 2000,
+                    timer: 2500,
                     showConfirmButton: false
                 });
             }
 
-            if (errorMsg && errorMsg.trim() !== '') {
+            if (errorMsg) {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Lỗi',
+                    title: 'Thất bại',
                     text: errorMsg
                 });
             }
 
-                    // ==========================================
-        // 2. VŨ KHÍ CHẶN DOUBLE SUBMIT (CHUẨN 100%)
-        // ==========================================
-        const forms = document.querySelectorAll('form');
-
-        forms.forEach(form => {
-            form.addEventListener('submit', function (e) {
-                const submitBtn = form.querySelector('button[type="submit"]');
-
-                if (submitBtn) {
-                    // Nếu nút đã bị đánh dấu là đang xử lý, chặn đứng luôn!
-                    if (submitBtn.classList.contains('is-submitting')) {
-                        e.preventDefault();
-                        return;
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function (e) {
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (!submitBtn) return;
+                    if (submitBtn) {
+                        if (submitBtn.classList.contains('is-submitting')) { e.preventDefault(); return; }
+                        submitBtn.classList.add('is-submitting');
+                        const isLocking = submitBtn.innerText.includes("Khóa") && !submitBtn.innerText.includes("Mở");
+                        submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> ${isLocking ? "Đang khóa..." : "Đang xử lý..."}`;
+                        setTimeout(() => { submitBtn.disabled = true; }, 10);
                     }
-
-                    // 1. Đánh dấu nút này đã được bấm
-                    submitBtn.classList.add('is-submitting');
-
-                    // 2. Đổi chữ thành vòng xoay loading
-                    const isLocking = submitBtn.innerText.includes("Khóa") && !submitBtn.innerText.includes("Mở");
-                    submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${isLocking ? "Đang khóa..." : "Đang mở..."}`;
-
-                    // 3. MẸO ĐỈNH CAO: Khóa nút sau 10 mili-giây.
-                    // Giúp trình duyệt vẫn kịp đóng gói và gửi form đi 1 lần duy nhất!
-                    setTimeout(() => {
-                        submitBtn.disabled = true;
-                    }, 10);
-                }
+                });
             });
         });
+
+        document.getElementById("userModal")?.addEventListener("show.bs.modal", function () {
+            resetUserForm();
         });
     </script>
 }

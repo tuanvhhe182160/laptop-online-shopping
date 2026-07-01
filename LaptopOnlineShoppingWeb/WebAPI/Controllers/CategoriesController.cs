@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
 using WebAPI.DTOs.Categories;
@@ -13,16 +13,17 @@ namespace WebAPI.Controllers
     public class CategoriesController : ControllerBase
     {
         private readonly IGenericRepository<Category> _categoryRepository;
-        private readonly IGenericRepository<Laptop> _laptopRepository; 
+        private readonly IProductRepository _productRepository; 
 
-        public CategoriesController(IGenericRepository<Category> categoryRepository, IGenericRepository<Laptop> laptopRepository)
+        public CategoriesController(IGenericRepository<Category> categoryRepository, IProductRepository productRepository)
         {
             _categoryRepository = categoryRepository;
-            _laptopRepository = laptopRepository;
+            _productRepository = productRepository;
         }
 
         [HttpGet]
         [EnableQuery]
+        [AllowAnonymous]
         public IActionResult GetAll()
         {
             return Ok(_categoryRepository.GetQueryable());
@@ -76,8 +77,8 @@ namespace WebAPI.Controllers
             var category = await _categoryRepository.GetByIdAsync(id);
             if (category == null) return NotFound(new { message = "Không tìm thấy hãng." });
 
-            bool hasLaptops = _laptopRepository.GetQueryable().Any(l => l.CategoryId == id);
-            if (hasLaptops) return BadRequest(new { message = "Không thể xóa hãng này vì có laptop liên kết." });
+            bool hasProducts = _productRepository.GetQueryable().Any(l => l.CategoryId == id);
+            if (hasProducts) return BadRequest(new { message = "Không thể xóa hãng này vì có sản phẩm liên kết." });
 
             _categoryRepository.Delete(category); 
             await _categoryRepository.SaveAsync();

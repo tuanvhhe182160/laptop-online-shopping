@@ -16,6 +16,7 @@
             <p><strong>Phương thức Thanh toán:</strong> @Model.Order.PaymentMethod</p>
             <p><strong>Trạng thái TT:</strong> @(Model.Order.PaymentStatus == true ? "Đã TT" : "Chưa TT")</p>
             <p><strong>Trạng thái Đơn hàng:</strong> <span class="badge bg-info">@Model.Order.OrderStatus</span></p>
+            <p><strong>Chi nhánh Phụ trách:</strong> @(Model.Order.BranchId.HasValue ? $"Chi nhánh {Model.Order.BranchId}" : "Chưa phân công")</p>
             <h4><strong>Tổng Tiền:</strong> @Model.Order.TotalAmount.ToString("N0") VNĐ</h4>
         </div>
     </div>
@@ -35,8 +36,22 @@
             @foreach (var item in Model.Order.Details)
             {
                 <tr>
-                    <td>@item.LaptopId</td>
-                    <td>@item.LaptopName</td>
+                    <td>@item.VariantId</td>
+                    <td>
+                        @item.LaptopName
+                        @if (item.SerialNumbers != null && item.SerialNumbers.Any())
+                        {
+                            <div class="mt-2">
+                                <strong>Serial Numbers:</strong>
+                                <ul class="mb-0 ps-3">
+                                    @foreach(var serial in item.SerialNumbers)
+                                    {
+                                        <li><span class="badge bg-secondary">@serial</span></li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+                    </td>
                     <td>@item.UnitPrice.ToString("N0") VNĐ</td>
                     <td>@item.Quantity</td>
                     <td>@item.TotalPrice.ToString("N0") VNĐ</td>

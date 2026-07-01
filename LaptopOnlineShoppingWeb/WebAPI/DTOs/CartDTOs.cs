@@ -4,19 +4,19 @@ namespace WebAPI.DTOs
 {
     public class AddToCartRequestDTO
     {
-        public int LaptopId { get; set; }
+        public int VariantId { get; set; }
         public int Quantity { get; set; }
     }
 
     public class UpdateCartItemDTO
     {
-        public int LaptopId { get; set; }
+        public int VariantId { get; set; }
         public int Quantity { get; set; }
     }
 
     public class CartItemResponseDTO
     {
-        public int LaptopId { get; set; }
+        public int VariantId { get; set; }
         public string LaptopName { get; set; } = null!;
         public decimal UnitPrice { get; set; }
         public int Quantity { get; set; }

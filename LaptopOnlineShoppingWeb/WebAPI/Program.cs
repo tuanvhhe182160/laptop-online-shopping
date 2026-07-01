@@ -3,10 +3,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OData.ModelBuilder;
 using System.Text;
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.OData;
-using Microsoft.OData.ModelBuilder;
 using WebAPI.Data;
 using WebAPI.Entities;
 using WebAPI.Repositories;
@@ -27,15 +26,23 @@ namespace WebAPI
             //Add repository pattern
             builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
-            builder.Services.AddScoped<ICartRepository, CartRepository>();
-            builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+            builder.Services.AddScoped<IProductRepository, ProductRepository>();
+            builder.Services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
+            builder.Services.AddScoped<IPhysicalProductRepository, PhysicalProductRepository>();
+            builder.Services.AddScoped<IFeedbackRepository, FeedbackRepository>();
+            //builder.Services.AddScoped<ICartRepository, CartRepository>();
+            //builder.Services.AddScoped<IOrderRepository, OrderRepository>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 
             //Add services
-            builder.Services.AddScoped<ICustomerService, CustomerService>();
-            builder.Services.AddScoped<ICartService, CartService>();
-            builder.Services.AddScoped<IOrderService, OrderService>();
+            //builder.Services.AddScoped<ICustomerService, CustomerService>();
+            //builder.Services.AddScoped<ICartService, CartService>();
+            //builder.Services.AddScoped<IOrderService, OrderService>();
+            builder.Services.AddScoped<IEmailService, EmailService>();
+            builder.Services.AddScoped<IProductService, ProductService>();
+            builder.Services.AddScoped<IWarehouseService, WarehouseService>();
+            builder.Services.AddScoped<IFeedbackService, FeedbackService>();
 
             //Add singleton pattern
             builder.Services.AddSingleton<SystemConfigService>();
@@ -70,9 +77,14 @@ namespace WebAPI
 
             // Add services to the container.
             var modelBuilder = new ODataConventionModelBuilder();
-            var laptopType = modelBuilder.EntitySet<Laptop>("Laptops").EntityType;
-            laptopType.Property(l => l.ImageUrl);
+            modelBuilder.EntitySet<Product>("Products");
+            modelBuilder.EntitySet<ProductVariant>("ProductVariants").EntityType.HasKey(p => p.VariantId);
+            modelBuilder.EntitySet<Feedback>("Feedbacks");
             modelBuilder.EntitySet<Category>("Categories");
+            modelBuilder.EntitySet<Customer>("Customers");
+            modelBuilder.EntitySet<PhysicalProduct>("PhysicalProducts").EntityType.HasKey(p => p.PhysicalId);
+            modelBuilder.EntitySet<Branch>("Branches").EntityType.HasKey(b => b.BranchId);
+            modelBuilder.EntitySet<Order>("Orders").EntityType.HasKey(o => o.OrderId);
             var edmModel = modelBuilder.GetEdmModel();
 
             builder.Services.AddControllers()
@@ -88,6 +100,7 @@ namespace WebAPI
                 .AddJsonOptions(options =>
                 {
                     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
                 });
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
@@ -106,8 +119,12 @@ namespace WebAPI
             }
 
             app.UseHttpsRedirection();
-            app.UseCors("AllowClient");
+
             app.UseStaticFiles();
+
+            app.UseRouting();
+
+            app.UseCors("AllowClient");
 
             app.UseAuthentication();
             app.UseAuthorization();
@@ -121,6 +138,7 @@ namespace WebAPI
                 try
                 {
                     var context = services.GetRequiredService<ApplicationDbContext>();
+                    // Tự động tạo DB mới
                     context.Database.EnsureCreated();
                     DbInitializer.Initialize(context);
                 }

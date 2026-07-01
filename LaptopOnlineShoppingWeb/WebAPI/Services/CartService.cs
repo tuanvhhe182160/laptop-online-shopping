@@ -17,12 +17,12 @@ namespace WebAPI.Services
     public class CartService : ICartService
     {
         private readonly ICartRepository _cartRepository;
-        private readonly IGenericRepository<Laptop> _laptopRepository;
+        private readonly IGenericRepository<ProductVariant> _variantRepository;
 
-        public CartService(ICartRepository cartRepository, IGenericRepository<Laptop> laptopRepository)
+        public CartService(ICartRepository cartRepository, IGenericRepository<ProductVariant> variantRepository)
         {
             _cartRepository = cartRepository;
-            _laptopRepository = laptopRepository;
+            _variantRepository = variantRepository;
         }
 
         public async Task<CartResponseDTO?> GetCartAsync(int customerId)
@@ -44,9 +44,9 @@ namespace WebAPI.Services
                 CustomerId = cart.CustomerId,
                 Items = cart.CartItems.Select(ci => new CartItemResponseDTO
                 {
-                    LaptopId = ci.LaptopId,
-                    LaptopName = ci.Laptop.LaptopName,
-                    UnitPrice = ci.Laptop.Price,
+                    VariantId = ci.VariantId,
+                    LaptopName = ci.ProductVariant.Product != null ? ci.ProductVariant.Product.ProductName : "Sản phẩm",
+                    UnitPrice = ci.ProductVariant.Price,
                     Quantity = ci.Quantity
                 }).ToList()
             };
@@ -56,8 +56,8 @@ namespace WebAPI.Services
 
         public async Task<bool> AddToCartAsync(int customerId, AddToCartRequestDTO dto)
         {
-            var laptop = await _laptopRepository.GetByIdAsync(dto.LaptopId);
-            if (laptop == null || laptop.Status == false) return false;
+            var variant = await _variantRepository.GetByIdAsync(dto.VariantId);
+            if (variant == null) return false;
 
             var cart = await _cartRepository.GetCartByCustomerIdAsync(customerId);
             if (cart == null)
@@ -73,7 +73,7 @@ namespace WebAPI.Services
                 await _cartRepository.SaveAsync();
             }
 
-            var existingItem = cart.CartItems.FirstOrDefault(ci => ci.LaptopId == dto.LaptopId);
+            var existingItem = cart.CartItems.FirstOrDefault(ci => ci.VariantId == dto.VariantId);
 
             int newQuantity = dto.Quantity;
             if (existingItem != null)
@@ -81,10 +81,11 @@ namespace WebAPI.Services
                 newQuantity += existingItem.Quantity;
             }
 
-            if (newQuantity > laptop.StockQuantity)
-            {
-                return false; // Vượt quá tồn kho
-            }
+            // TODO: Bổ sung logic check Stock dựa vào số lượng PhysicalProduct InStock
+            // if (newQuantity > variant.StockQuantity)
+            // {
+            //     return false; // Vượt quá tồn kho
+            // }
 
             if (existingItem != null)
             {
@@ -95,7 +96,7 @@ namespace WebAPI.Services
                 cart.CartItems.Add(new CartItem
                 {
                     CartId = cart.CartId,
-                    LaptopId = dto.LaptopId,
+                    VariantId = dto.VariantId,
                     Quantity = dto.Quantity
                 });
             }
@@ -109,23 +110,23 @@ namespace WebAPI.Services
             var cart = await _cartRepository.GetCartByCustomerIdAsync(customerId);
             if (cart == null) return false;
 
-            var existingItem = cart.CartItems.FirstOrDefault(ci => ci.LaptopId == dto.LaptopId);
+            var existingItem = cart.CartItems.FirstOrDefault(ci => ci.VariantId == dto.VariantId);
             if (existingItem == null) return false;
 
-            var laptop = await _laptopRepository.GetByIdAsync(dto.LaptopId);
-            if (laptop == null || dto.Quantity > laptop.StockQuantity) return false;
+            var variant = await _variantRepository.GetByIdAsync(dto.VariantId);
+            if (variant == null) return false;
 
             existingItem.Quantity = dto.Quantity;
             await _cartRepository.SaveAsync();
             return true;
         }
 
-        public async Task<bool> RemoveFromCartAsync(int customerId, int laptopId)
+        public async Task<bool> RemoveFromCartAsync(int customerId, int variantId)
         {
             var cart = await _cartRepository.GetCartByCustomerIdAsync(customerId);
             if (cart == null) return false;
 
-            var existingItem = cart.CartItems.FirstOrDefault(ci => ci.LaptopId == laptopId);
+            var existingItem = cart.CartItems.FirstOrDefault(ci => ci.VariantId == variantId);
             if (existingItem == null) return false;
 
             cart.CartItems.Remove(existingItem);

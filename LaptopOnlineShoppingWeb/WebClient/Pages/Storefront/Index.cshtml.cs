@@ -18,7 +18,7 @@ namespace WebClient.Pages.Storefront
             _httpClientFactory = httpClientFactory;
         }
 
-        public IList<Laptop> Laptops { get; set; } = new List<Laptop>();
+        public IList<ProductVariant> ProductVariants { get; set; } = new List<ProductVariant>();
         public IList<Category> Categories { get; set; } = new List<Category>();
 
         [BindProperty(SupportsGet = true)]
@@ -52,30 +52,28 @@ namespace WebClient.Pages.Storefront
             }
             catch (Exception)
             {
-                // Safe ignore or fallback
             }
 
-            // 2. Fetch Laptops with OData query filters
+            // 2. Fetch ProductVariants with OData query filters
             try
             {
-                // Base OData path with Category expansion
-                var odataQuery = "odata/Laptops?$expand=Category";
+                // We need PhysicalProducts to count stock, and Product -> Category
+                var odataQuery = "api/ProductVariants?$expand=PhysicalProducts,Product($expand=Category)";
 
-                // Build OData $filter expressions
                 var filters = new List<string>();
 
-                // Customers should only see active (selling) laptops
-                filters.Add("Status eq true");
+                // Active products only
+                filters.Add("Product/Status eq true");
 
                 if (!string.IsNullOrWhiteSpace(Search))
                 {
-                    var escSearch = Search.Replace("'", "''"); // escape single quotes
-                    filters.Add($"(contains(tolower(LaptopName), tolower('{escSearch}')) or contains(tolower(LaptopCode), tolower('{escSearch}')))");
+                    var escSearch = Search.Replace("'", "''");
+                    filters.Add($"(contains(tolower(Product/ProductName), tolower('{escSearch}')) or contains(tolower(Product/ProductCode), tolower('{escSearch}')) or contains(tolower(Cpu), tolower('{escSearch}')))");
                 }
 
                 if (CategoryId.HasValue && CategoryId.Value > 0)
                 {
-                    filters.Add($"CategoryId eq {CategoryId.Value}");
+                    filters.Add($"Product/CategoryId eq {CategoryId.Value}");
                 }
 
                 if (MinPrice.HasValue && MinPrice.Value > 0)
@@ -93,31 +91,26 @@ namespace WebClient.Pages.Storefront
                     odataQuery += "&$filter=" + string.Join(" and ", filters);
                 }
 
-                // Add sorting (newest laptops first)
-                odataQuery += "&$orderby=CreatedDate desc";
-
                 var response = await client.GetAsync(odataQuery);
                 if (response.IsSuccessStatusCode)
                 {
                     var data = await response.Content.ReadAsStringAsync();
                     
-                    // Parse OData wrapped response {"value": [...]}
                     using (var doc = JsonDocument.Parse(data))
                     {
-                        if (doc.RootElement.TryGetProperty("value", out var valueElement))
+                        if (doc.RootElement.ValueKind == JsonValueKind.Object && doc.RootElement.TryGetProperty("value", out var valueElement))
                         {
-                            Laptops = JsonSerializer.Deserialize<List<Laptop>>(valueElement.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<Laptop>();
+                            ProductVariants = JsonSerializer.Deserialize<List<ProductVariant>>(valueElement.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<ProductVariant>();
                         }
                         else
                         {
-                            Laptops = JsonSerializer.Deserialize<List<Laptop>>(data, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<Laptop>();
+                            ProductVariants = JsonSerializer.Deserialize<List<ProductVariant>>(data, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<ProductVariant>();
                         }
                     }
                 }
             }
             catch (Exception)
             {
-                // Safe ignore or fallback
             }
         }
     }

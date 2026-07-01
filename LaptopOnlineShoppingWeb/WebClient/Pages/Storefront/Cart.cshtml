@@ -31,11 +31,11 @@
                         <td>
                             <input type="number" class="form-control text-center" style="width: 80px"
                                    value="@item.Quantity"
-                                   onchange="updateCart('@item.LaptopId', this.value)" />
+                                   onchange="updateCart('@item.VariantId', this.value)" />
                         </td>
                         <td class="text-danger fw-bold">@item.TotalPrice.ToString("N0") VNĐ</td>
                         <td>
-                            <button class="btn btn-danger btn-sm" onclick="removeFromCart('@item.LaptopId')">Xóa</button>
+                            <button class="btn btn-danger btn-sm" onclick="removeFromCart('@item.VariantId')">Xóa</button>
                         </td>
                     </tr>
                 }

@@ -33,7 +33,10 @@ namespace WebAPI.Controllers
                 u.FullName,
                 u.Email,
                 u.IsActive,
-                RoleName = u.Role?.RoleName 
+                RoleId = u.RoleId,
+                RoleName = u.Role?.RoleName,
+                BranchId = u.BranchId,
+                BranchName = u.Branch?.BranchName ?? "Toàn hệ thống" // Hiển thị cho Admin tổng
             });
 
             return Ok(response);
@@ -43,7 +46,7 @@ namespace WebAPI.Controllers
         public async Task<IActionResult> CreateUser([FromBody] UserCreateRequest request)
         {
             if (await _userRepository.UsernameExistsAsync(request.Username))
-                return BadRequest("Username đã tồn tại."); // Bỏ object nặc danh để Client đọc chuỗi lỗi dễ hơn
+                return BadRequest("Username đã tồn tại."); 
 
             var newUser = new User
             {
@@ -52,6 +55,7 @@ namespace WebAPI.Controllers
                 FullName = request.FullName,
                 Email = request.Email,
                 RoleId = request.RoleId,
+                BranchId = request.BranchId,
                 IsActive = request.IsActive
             };
 
@@ -90,10 +94,35 @@ namespace WebAPI.Controllers
                 user.FullName,
                 user.Email,
                 user.IsActive,
-                RoleName = user.Role?.RoleName ?? "Chưa cấp quyền"
+                RoleName = user.Role?.RoleName ?? "Chưa cấp quyền",
+                BranchId = user.BranchId,
+                BranchName = user.Branch?.BranchName ?? "Toàn hệ thống"
             };
 
             return Ok(response);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] UserUpdateRequest request)
+        {
+            var user = await _userRepository.GetByIdAsync(id);
+
+            if (user == null)
+                return NotFound("Không tìm thấy nhân viên.");
+
+            user.FullName = request.FullName;
+            user.Email = request.Email;
+            user.RoleId = request.RoleId;
+            user.BranchId = request.BranchId;
+            user.IsActive = request.IsActive;
+
+            await _userRepository.UpdateAsync(user);
+            await _userRepository.SaveAsync();
+
+            return Ok(new
+            {
+                message = "Cập nhật nhân viên thành công."
+            });
         }
     }
 }

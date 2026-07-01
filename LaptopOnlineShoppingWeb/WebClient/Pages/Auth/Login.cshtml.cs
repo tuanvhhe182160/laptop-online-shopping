@@ -9,13 +9,17 @@ using WebClient.ViewModels.Auth;
 namespace WebClient.Pages.Auth
 {
     public class LoginModel : PageModel
-    {
+    {       
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
 
-        public LoginModel(IHttpClientFactory httpClientFactory)
+        public LoginModel(IHttpClientFactory httpClientFactory, IConfiguration configuration)
         {
             _httpClientFactory = httpClientFactory;
+            _configuration = configuration;
         }
+
+        public string GoogleClientId { get; set; }
 
         [BindProperty]
         public string Username { get; set; } = string.Empty;
@@ -30,15 +34,34 @@ namespace WebClient.Pages.Auth
 
         public void OnGet()
         {
-            if(User.Identity != null && User.Identity.IsAuthenticated && (User.IsInRole("Admin") || User.IsInRole("Staff")))
+            GoogleClientId = _configuration["Google:ClientId"];
+
+            if (User.Identity != null && User.Identity.IsAuthenticated)
             {
-                Response.Redirect("/Admin/Index");
+                if (User.IsInRole("Admin"))
+                {
+                    Response.Redirect("/admin/dashboard");
+                }
+                else if (User.IsInRole("Staff"))
+                {
+                    Response.Redirect("/admin/orders"); // Địa bàn của Staff: Quản lý đơn hàng
+                }
+                else if (User.IsInRole("WarehouseManager"))
+                {
+                    Response.Redirect("/BackOffice/Warehouse/Import"); // Địa bàn của Manager: Quản lý kho nhập seri
+                }
+                else
+                {
+                    Response.Redirect("/Storefront/Index");
+                }
             }
         }
 
         public async Task<IActionResult> OnGetLogoutAsync()
         {
             await HttpContext.SignOutAsync("MyCookieAuth");
+            // Xóa luôn token trong localStorage của JS khi Logout
+            Response.Cookies.Delete("AccessToken");
             return RedirectToPage("/Auth/Login");
         }
 
@@ -66,19 +89,40 @@ namespace WebClient.Pages.Auth
                         new Claim(ClaimTypes.Role, result.Role),
                         new Claim("FullName", result.FullName),
                         new Claim("AvatarUrl", result.AvatarUrl ?? ""),
-                        new Claim("AccessToken", result.Token)
+                        new Claim("AccessToken", result.Token) 
                     };
+
+                    if (result.BranchId.HasValue)
+                    {
+                        claims.Add(new Claim("BranchId", result.BranchId.Value.ToString()));
+                    }
+                    else
+                    {
+                        claims.Add(new Claim("BranchId", "0")); // Admin tổng
+                    }
 
                     var claimsIdentity = new ClaimsIdentity(claims, "MyCookieAuth");
-
-                    var authProperties = new AuthenticationProperties
-                    {
-                        IsPersistent = true,
-                        ExpiresUtc = DateTimeOffset.UtcNow.AddHours(3)
-                    };
+                    var authProperties = new AuthenticationProperties { IsPersistent = true, ExpiresUtc = DateTimeOffset.UtcNow.AddHours(3) };
 
                     await HttpContext.SignInAsync("MyCookieAuth", new ClaimsPrincipal(claimsIdentity), authProperties);
-                    return LocalRedirect(ReturnUrl ?? "/Admin/Index");
+
+                    string defaultUrl = "/Storefront/Index"; // Mặc định cho Customer
+
+                    if (result.Role == "Admin")
+                    {
+                        defaultUrl = "/admin/dashboard";
+                    }
+                    else if (result.Role == "Staff")
+                    {
+                        defaultUrl = "/admin/orders"; // Đường dẫn đến trang quản lý đơn hàng của Mem 3
+                    }
+                    else if (result.Role == "WarehouseManager")
+                    {
+                        defaultUrl = "/BackOffice/Warehouse/Import"; // Đường dẫn đến trang nhập kho của Mem 2
+                    }
+
+                    string targetUrl = ReturnUrl ?? defaultUrl;
+                    return LocalRedirect(targetUrl);
                 }
             }
             try
@@ -92,6 +136,64 @@ namespace WebClient.Pages.Auth
             }
 
             return Page();
+        }
+
+        public async Task<IActionResult> OnPostGoogleCallbackAsync([FromBody] LoginResponse data)
+        {
+            if (data == null || string.IsNullOrEmpty(data.Token))
+            {
+                return BadRequest(new { success = false, message = "Dữ liệu trả về từ API không hợp lệ." });
+            }
+
+            // 1. Đóng gói danh sách Claims y hệt như lúc đăng nhập bằng mật khẩu thường
+            var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.Name, data.FullName ?? "Staff"),
+        new Claim(ClaimTypes.Role, data.Role),
+        new Claim("FullName", data.FullName ?? ""),
+        new Claim("AvatarUrl", data.AvatarUrl ?? ""),
+        new Claim("AccessToken", data.Token)
+    };
+
+            // Kiểm tra và nhét BranchId vào claim
+            if (data.BranchId.HasValue)
+            {
+                claims.Add(new Claim("BranchId", data.BranchId.Value.ToString()));
+            }
+            else
+            {
+                claims.Add(new Claim("BranchId", "0")); // Admin tổng
+            }
+
+            var claimsIdentity = new ClaimsIdentity(claims, "MyCookieAuth");
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = true,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(3)
+            };
+
+            // 2. Kích hoạt Cookie - Chính thức cho User này vào cổng bảo mật của Razor Pages
+            await HttpContext.SignInAsync("MyCookieAuth", new ClaimsPrincipal(claimsIdentity), authProperties);
+
+            // 3. Tính toán địa điểm chuyển hướng dựa theo phân quyền (Role) giống hệt OnPost thường
+            string defaultUrl = "/Storefront/Index";
+            if (data.Role == "Admin")
+            {
+                defaultUrl = "/admin/dashboard";
+            }
+            else if (data.Role == "Staff")
+            {
+                defaultUrl = "/admin/orders";
+            }
+            else if (data.Role == "WarehouseManager")
+            {
+                defaultUrl = "/admin/warehouse";
+            }
+
+            string targetUrl = ReturnUrl ?? defaultUrl;
+
+            // Trả về kết quả kèm URL mục tiêu cho Javascript thực hiện redirect
+            return new JsonResult(new { success = true, redirectTo = targetUrl });
         }
     }
 }

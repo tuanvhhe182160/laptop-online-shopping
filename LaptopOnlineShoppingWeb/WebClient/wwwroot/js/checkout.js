@@ -1,11 +1,10 @@
-// Bọc tất cả vào sự kiện DOMContentLoaded để tạo Scope (phạm vi) cục bộ
+// Bọc tất cả vào sự kiện DOMContentLoaded để tạo Scope cục bộ
 document.addEventListener("DOMContentLoaded", () => {
 
-    // Nhốt 2 biến này vào trong, chúng sẽ không đụng độ với cart.js nữa
     const API_BASE = document.body.getAttribute('data-api-base') || '';
     const TOKEN = document.body.getAttribute('data-token');
 
-    // Hàm getHeaders cũng được nhốt vào trong
+    // Hàm lấy Header chứa Token
     function getHeaders() {
         const headers = { 'Content-Type': 'application/json' };
         if (TOKEN) headers['Authorization'] = `Bearer ${TOKEN}`;
@@ -15,32 +14,46 @@ document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("checkoutForm");
     if (form) {
         form.addEventListener("submit", async (e) => {
-            // Chặn form submit kiểu cũ (chặn cái dấu ? trên URL)
+            // Chặn reload trang
             e.preventDefault();
 
-            // Nếu không có token, báo lỗi đăng nhập
+            // Kiểm tra trạng thái đăng nhập
             if (!TOKEN) {
-                if (confirm('Phiên đăng nhập đã hết hạn. Chuyển đến trang đăng nhập?')) {
+                if (confirm('Phiên đăng nhập đã hết hạn hoặc chưa đăng nhập. Chuyển đến trang đăng nhập?')) {
                     window.location.href = '/Auth/CustomerLogin';
                 }
                 return;
             }
 
             const isBuyNow = document.getElementById("isBuyNow").value === "true";
-            const laptopId = parseInt(document.getElementById("laptopId").value);
-            let quantity = parseInt(document.getElementById("quantity").value || 0);
+
+            // LƯU Ý CHO HTML: Đảm bảo input hidden trong file Razor/HTML của bạn đã đổi id thành "variantId"
+            const variantIdInput = document.getElementById("variantId");
+            const variantId = variantIdInput ? parseInt(variantIdInput.value) : 0;
+
+            let quantity = parseInt(document.getElementById("quantity")?.value || 0);
 
             if (isBuyNow) {
                 const qElem = document.getElementById('buyNowQuantity');
                 if (qElem) quantity = parseInt(qElem.value) || 1;
             }
 
-            const shippingAddress = document.getElementById("shippingAddress").value;
-            const paymentMethod = document.getElementById("paymentMethod").value;
+            const shippingAddress = document.getElementById("shippingAddress")?.value || "";
+            const paymentMethod = document.getElementById("paymentMethod")?.value || "COD";
 
-            // Xóa customerId khỏi Payload và URL
+            // Hiển thị loading (tùy chọn, dùng SweetAlert2)
+            Swal.fire({
+                title: 'Đang xử lý giao dịch...',
+                text: 'Vui lòng không đóng trình duyệt.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Gửi Payload tương ứng với logic Mua ngay (Direct) hoặc Mua từ Giỏ (Cart)
             if (isBuyNow) {
-                const payload = { laptopId, quantity, shippingAddress, paymentMethod };
+                const payload = { variantId, quantity, shippingAddress, paymentMethod };
                 await processCheckout(`${API_BASE}/api/Orders/checkout-direct`, payload);
             } else {
                 const payload = { shippingAddress, paymentMethod };
@@ -49,17 +62,17 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Đưa hàm processCheckout vào trong để nó dùng được getHeaders()
+    // Xử lý gửi Request và phản hồi UI
     async function processCheckout(url, payload) {
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: getHeaders(), // Gắn Token
+                headers: getHeaders(),
                 body: JSON.stringify(payload)
             });
 
-            if (response.status === 401) {
-                Swal.fire({ title: 'Lỗi', text: 'Vui lòng đăng nhập lại.', icon: 'error' });
+            if (response.status === 401 || response.status === 403) {
+                Swal.fire({ title: 'Lỗi quyền truy cập', text: 'Vui lòng đăng nhập lại với tài khoản khách hàng.', icon: 'error' });
                 return;
             }
 
@@ -72,21 +85,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 Swal.fire({
                     title: 'Đặt hàng thành công!',
-                    text: orderId ? `Mã đơn hàng: #${orderId}` : 'Đơn hàng đã được tạo.',
+                    text: orderId ? `Mã đơn hàng của bạn: #${orderId}` : 'Đơn hàng đã được ghi nhận.',
                     icon: 'success',
-                    timer: 2000,
+                    timer: 2500,
                     showConfirmButton: false
                 }).then(() => {
                     // Chuyển hướng về trang lịch sử mua hàng
                     window.location.href = "/Storefront/OrderHistory";
                 });
             } else {
-                const err = await response.text();
-                Swal.fire({ title: 'Lỗi', text: err, icon: 'error' });
+                // Đọc lỗi trả về từ Backend (Ví dụ lỗi: Hết hàng, tranh chấp kho)
+                let errorMsg = "Đã xảy ra lỗi khi thanh toán.";
+                try {
+                    const errorJson = await response.json();
+                    // Lấy message từ BadRequest(new { message = ex.Message })
+                    errorMsg = errorJson.message || errorJson.title || JSON.stringify(errorJson);
+                } catch {
+                    errorMsg = await response.text();
+                }
+
+                Swal.fire({ title: 'Giao dịch thất bại', text: errorMsg, icon: 'error' });
             }
         } catch (e) {
             console.error(e);
-            Swal.fire({ title: 'Lỗi', text: 'Lỗi kết nối.', icon: 'error' });
+            Swal.fire({ title: 'Lỗi hệ thống', text: 'Mất kết nối tới máy chủ. Vui lòng thử lại sau.', icon: 'error' });
         }
     }
 });

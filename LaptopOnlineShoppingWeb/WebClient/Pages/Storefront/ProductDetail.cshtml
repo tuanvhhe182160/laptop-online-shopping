@@ -1,0 +1,417 @@
+@page "{id:int}"
+@model WebClient.Pages.Storefront.ProductDetailModel
+@{
+    ViewData["Title"] = Model.Variant?.Product?.ProductName;
+    var inStockCount = Model.Variant?.PhysicalProducts?.Count(p => p.Status == "InStock") ?? 0;
+}
+
+<div class="container py-4">
+    <div class="mb-4">
+        <a href="/Storefront/Index" class="text-decoration-none text-muted"><i class="bi bi-arrow-left"></i> Quay lại cửa hàng</a>
+    </div>
+
+    <!-- Product Info Section -->
+    <div class="row mb-5">
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body d-flex align-items-center justify-content-center bg-light" style="height: 400px;">
+                    <i class="bi bi-laptop text-secondary opacity-50" style="font-size: 10rem;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-7">
+            <h2 class="fw-bold text-dark mb-2">@Model.Variant?.Product?.ProductName</h2>
+            <div class="mb-3">
+                <span class="badge bg-primary me-2">@Model.Variant?.Product?.Category?.CategoryName</span>
+                <span class="text-muted small">Mã SP: @Model.Variant?.Product?.ProductCode</span>
+            </div>
+            
+            <h3 class="text-danger fw-bold mb-4">@Model.Variant?.Price.ToString("N0") đ</h3>
+            
+            <div class="card border-0 bg-light mb-4">
+                <div class="card-body">
+                    <h6 class="fw-bold border-bottom pb-2 mb-3">Cấu hình chi tiết</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><strong>CPU:</strong> @Model.Variant?.CPU</li>
+                        <li class="mb-2"><strong>RAM:</strong> @Model.Variant?.RAM</li>
+                        <li class="mb-2"><strong>Ổ cứng:</strong> @Model.Variant?.SSD</li>
+                        <li class="mb-0"><strong>Màu sắc:</strong> @Model.Variant?.Color</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-3">
+                <div class="input-group" style="width: 150px;">
+                    <span class="input-group-text">Số lượng</span>
+                    <input type="number" id="qty" min="1" max="@(inStockCount > 0 ? inStockCount : 1)" value="1" class="form-control text-center" @(inStockCount == 0 ? "disabled" : "") />
+                </div>
+                
+                @if(inStockCount > 0)
+                {
+                    <button class="btn btn-outline-primary px-4 btn-add-cart" data-variant-id="@Model.Variant?.VariantId">
+                        <i class="bi bi-cart-plus"></i> Thêm vào giỏ
+                    </button>
+                    <button class="btn btn-primary px-4 btn-buy-now" data-variant-id="@Model.Variant?.VariantId">
+                        <i class="bi bi-bag-check"></i> Mua ngay
+                    </button>
+                    <span class="text-success small ms-2"><i class="bi bi-check-circle-fill"></i> Còn @inStockCount máy</span>
+                }
+                else
+                {
+                    <button class="btn btn-secondary px-4" disabled>Hết hàng</button>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Section -->
+    <hr class="my-5" />
+    <div class="row">
+        <div class="col-12">
+            <h4 class="fw-bold mb-4">Đánh giá sản phẩm</h4>
+            
+            <!-- Feedback Form for Customers -->
+            @if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Customer"))
+            {
+                <div class="card shadow-sm border-0 mb-5">
+                    <div class="card-body p-4 bg-light rounded-3">
+                        <h6 class="fw-bold mb-3">Gửi đánh giá của bạn</h6>
+                        <form id="feedbackForm">
+                            <input type="hidden" id="fb_variantId" value="@Model.Variant?.VariantId" />
+                            
+                            <div class="mb-3">
+                                <label class="form-label text-muted small">Đánh giá sao <span class="text-danger">*</span></label>
+                                <div class="rating-stars fs-4 text-warning" style="cursor: pointer;">
+                                    <span class="badge bg-secondary">@Model.Variant?.CPU</span>
+                                    <span class="badge bg-secondary">@Model.Variant?.RAM</span>
+                                    <span class="badge bg-secondary">@Model.Variant?.SSD</span>
+                                    <i class="bi bi-star" data-val="4"></i>
+                                    <i class="bi bi-star" data-val="5"></i>
+                                </div>
+                                <input type="hidden" id="fb_rating" value="0" required />
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label text-muted small">Nội dung đánh giá <span class="text-danger">*</span></label>
+                                <textarea id="fb_comment" class="form-control border-secondary-subtle" rows="3" placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này..." required></textarea>
+                            </div>
+                            
+                            <button type="button" class="btn btn-success px-4" onclick="submitFeedback()">
+                                <i class="bi bi-send me-1"></i> Gửi đánh giá
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+            else if (!User.Identity.IsAuthenticated)
+            {
+                <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-5">
+                    <i class="bi bi-info-circle-fill me-3 fs-4"></i>
+                    <div>
+                        Vui lòng <a href="/Auth/CustomerLogin?ReturnUrl=@System.Net.WebUtility.UrlEncode($"/Storefront/ProductDetail/{Model.Variant?.VariantId}")" class="alert-link fw-bold">Đăng nhập</a> để gửi đánh giá sản phẩm.
+                    </div>
+                </div>
+            }
+
+            <!-- Feedback List -->
+            <div id="feedbackList" class="d-flex flex-column gap-3">
+                <div class="text-center text-muted py-4">
+                    <div class="spinner-border text-secondary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-2 small">Đang tải đánh giá...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const variantId = @Model.Variant?.VariantId;
+        const apiBase = document.body.getAttribute('data-api-base') || '';
+        const token = document.body.getAttribute('data-token') || '';
+
+        // Star rating UI logic
+        document.querySelectorAll('.rating-stars i').forEach(star => {
+            star.addEventListener('click', function() {
+                const val = this.getAttribute('data-val');
+                document.getElementById('fb_rating').value = val;
+                
+                // update UI
+                document.querySelectorAll('.rating-stars i').forEach(s => {
+                    if (s.getAttribute('data-val') <= val) {
+                        s.classList.remove('bi-star');
+                        s.classList.add('bi-star-fill');
+                    } else {
+                        s.classList.remove('bi-star-fill');
+                        s.classList.add('bi-star');
+                    }
+                });
+            });
+        });
+
+        function parseJwt(token) {
+            try {
+                var base64Url = token.split('.')[1];
+                var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch(e) {
+                return null;
+            }
+        }
+        
+        let currentCustomerId = null;
+        if (token) {
+            let decoded = parseJwt(token);
+            if (decoded && decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']) {
+                currentCustomerId = parseInt(decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']);
+            }
+        }
+
+        // Load Feedbacks
+        function loadFeedbacks() {
+            fetch(`${apiBase}/api/Feedbacks?$filter=VariantId eq ${variantId}&$expand=Customer&$orderby=CreatedAt desc`)
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('feedbackList');
+                container.innerHTML = '';
+                
+                let items = data.value || data; // OData wrap
+                if (items.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-4"><i class="bi bi-chat-square-text fs-1 opacity-25"></i><p class="mt-2">Chưa có đánh giá nào cho sản phẩm này.</p></div>';
+                    return;
+                }
+
+                items.forEach(fb => {
+                    let starsHtml = '';
+                    for(let i=1; i<=5; i++) {
+                        starsHtml += i <= fb.Rating ? '<i class="bi bi-star-fill text-warning"></i> ' : '<i class="bi bi-star text-warning"></i> ';
+                    }
+                    
+                    const dateStr = fb.CreatedAt ? new Date(fb.CreatedAt).toLocaleDateString('vi-VN') : '';
+                    const customerName = fb.Customer ? fb.Customer.FullName : 'Khách hàng ẩn danh';
+
+                    let actionsHtml = '';
+                    if (fb.CustomerId === currentCustomerId) {
+                        actionsHtml = `
+                            <div class="mt-2 text-end">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="editFeedback(${fb.FeedbackId}, ${fb.Rating}, '${fb.Comment.replace(/'/g, "\\'")}')">Sửa</button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteFeedback(${fb.FeedbackId})">Xóa</button>
+                            </div>
+                        `;
+                    }
+
+                    container.innerHTML += `
+                        <div class="card border-0 shadow-sm rounded-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <div>
+                                        <h6 class="fw-bold mb-1">${customerName}</h6>
+                                        <div class="small">${starsHtml}</div>
+                                    </div>
+                                    <span class="text-muted small">${dateStr}</span>
+                                </div>
+                                <p class="mb-0 text-dark">${fb.Comment}</p>
+                                ${actionsHtml}
+                            </div>
+                        </div>
+                    `;
+                });
+            })
+            .catch(err => {
+                document.getElementById('feedbackList').innerHTML = '<div class="text-center text-danger py-4">Không thể tải đánh giá.</div>';
+            });
+        }
+
+        // Submit Feedback
+        function submitFeedback() {
+            const rating = parseInt(document.getElementById('fb_rating').value);
+            const comment = document.getElementById('fb_comment').value.trim();
+
+            if (rating === 0) {
+                Swal.fire('Nhắc nhở', 'Vui lòng chọn số sao đánh giá.', 'warning');
+                return;
+            }
+            if (comment === '') {
+                Swal.fire('Nhắc nhở', 'Vui lòng nhập nội dung đánh giá.', 'warning');
+                return;
+            }
+
+            const payload = {
+                VariantId: variantId,
+                Rating: rating,
+                Comment: comment
+            };
+
+            fetch(`${apiBase}/api/feedbacks`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                return res.json().then(data => {
+                    if (!res.ok) throw new Error(data.message || 'Có lỗi xảy ra.');
+                    return data;
+                });
+            })
+            .then(data => {
+                Swal.fire('Thành công', data.message, 'success');
+                // Clear form
+                document.getElementById('fb_rating').value = 0;
+                document.getElementById('fb_comment').value = '';
+                document.querySelectorAll('.rating-stars i').forEach(s => {
+                    s.classList.remove('bi-star-fill');
+                    s.classList.add('bi-star');
+                });
+                // Reload feedbacks
+                loadFeedbacks();
+            })
+            .catch(err => {
+                Swal.fire('Thất bại', err.message, 'error');
+            });
+        }
+
+        function editFeedback(id, oldRating, oldComment) {
+            Swal.fire({
+                title: 'Sửa đánh giá',
+                html: `
+                    <div class="mb-3 text-start">
+                        <label class="form-label fw-bold">Số sao:</label>
+                        <select id="swal-rating" class="form-select">
+                            <option value="5" ${oldRating == 5 ? 'selected' : ''}>5 Sao</option>
+                            <option value="4" ${oldRating == 4 ? 'selected' : ''}>4 Sao</option>
+                            <option value="3" ${oldRating == 3 ? 'selected' : ''}>3 Sao</option>
+                            <option value="2" ${oldRating == 2 ? 'selected' : ''}>2 Sao</option>
+                            <option value="1" ${oldRating == 1 ? 'selected' : ''}>1 Sao</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 text-start">
+                        <label class="form-label fw-bold">Bình luận:</label>
+                        <textarea id="swal-comment" class="form-control" rows="3">${oldComment}</textarea>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Lưu thay đổi',
+                cancelButtonText: 'Hủy',
+                preConfirm: () => {
+                    const rating = document.getElementById('swal-rating').value;
+                    const comment = document.getElementById('swal-comment').value;
+                    if (!comment.trim()) {
+                        Swal.showValidationMessage('Vui lòng nhập nội dung.');
+                        return false;
+                    }
+                    return { rating: parseInt(rating), comment: comment };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`${apiBase}/api/feedbacks/customer/${id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
+                        body: JSON.stringify({
+                            Rating: result.value.rating,
+                            Comment: result.value.comment
+                        })
+                    })
+                    .then(res => res.json().then(data => {
+                        if (!res.ok) throw new Error(data.message || 'Có lỗi xảy ra.');
+                        Swal.fire('Thành công', data.message, 'success');
+                        loadFeedbacks();
+                    }))
+                    .catch(err => Swal.fire('Thất bại', err.message, 'error'));
+                }
+            });
+        }
+
+        function deleteFeedback(id) {
+            Swal.fire({
+                title: 'Xóa đánh giá?',
+                text: "Bạn có chắc chắn muốn xóa đánh giá này không?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Xóa',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`${apiBase}/api/feedbacks/customer/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': 'Bearer ' + token
+                        }
+                    })
+                    .then(res => res.json().then(data => {
+                        if (!res.ok) throw new Error(data.message || 'Có lỗi xảy ra.');
+                        Swal.fire('Thành công', data.message, 'success');
+                        loadFeedbacks();
+                    }))
+                    .catch(err => Swal.fire('Thất bại', err.message, 'error'));
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            // Init cart badge logic (reuse from index)
+            async function initCartCount() {
+                try {
+                    const count = await getCartCount();
+                    $('#cartCount').text(count || 0);
+                } catch (e) {}
+            }
+            initCartCount();
+
+            // Load feedback initially
+            loadFeedbacks();
+
+            // Cart buttons logic
+            $('.btn-add-cart').click(async function() {
+                var vId = $(this).data('variant-id');
+                var qty = parseInt($('#qty').val()) || 1;
+                const res = await addToCart(vId, qty);
+                if (res && res.ok) {
+                    initCartCount();
+                    Swal.fire({ title: 'Đã thêm vào giỏ hàng', icon: 'success', timer: 1500, showConfirmButton: false });
+                } else {
+                    if (res && res.message === 'NOT_AUTHENTICATED') {
+                        Swal.fire({ title: 'Đăng nhập', text: 'Cần đăng nhập.', icon: 'warning' })
+                        .then(() => window.location.href = `/Auth/CustomerLogin?ReturnUrl=${encodeURIComponent(window.location.pathname)}`);
+                    } else {
+                        Swal.fire({ title: 'Lỗi', text: res?.message || 'Lỗi thêm giỏ hàng', icon: 'error' });
+                    }
+                }
+            });
+
+            $('.btn-buy-now').click(function() {
+                var isAuthenticated = @(User.Identity != null && User.Identity.IsAuthenticated ? "true" : "false");
+                var isCustomer = @(User.IsInRole("Customer") ? "true" : "false");
+
+                if (!isAuthenticated) {
+                    Swal.fire({ title: 'Đăng nhập', text: 'Cần đăng nhập để mua hàng.', icon: 'warning' })
+                        .then(() => window.location.href = `/Auth/CustomerLogin?ReturnUrl=${encodeURIComponent(window.location.pathname)}`);
+                    return;
+                }
+                
+                if (isAuthenticated && !isCustomer) {
+                    Swal.fire({ 
+                        title: 'Tài khoản không hợp lệ', 
+                        text: 'Bạn đang đăng nhập bằng tài khoản Quản trị / Nhân viên. Chức năng mua hàng chỉ dành cho Khách Hàng.', 
+                        icon: 'error' 
+                    });
+                    return;
+                }
+
+                var vId = $(this).data('variant-id');
+                var qty = parseInt($('#qty').val()) || 1;
+                window.location.href = `/Storefront/Checkout?buynow=true&variantid=${vId}&qty=${qty}`;
+            });
+        });
+    </script>
+}
