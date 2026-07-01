@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Headers;
@@ -9,7 +9,7 @@ using WebClient.Models;
 
 namespace WebClient.Pages.Admin.Orders
 {
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin,Staff,WarehouseManager")]
     public class IndexModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;

@@ -1,0 +1,167 @@
+@page
+@model WebClient.Pages.BackOffice.Feedback.IndexModel
+@{
+    ViewData["Title"] = "Quản lý Đánh giá";
+    Layout = "_AdminLayout";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold text-dark m-0">Quản lý Đánh giá sản phẩm</h3>
+    </div>
+
+    <!-- Feedback Grid -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle m-0" id="feedbackTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Sản phẩm / Cấu hình</th>
+                            <th>Khách hàng</th>
+                            <th>Đánh giá</th>
+                            <th>Nội dung</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end pe-4">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rendered by AJAX -->
+                        <tr><td colspan="6" class="text-center py-4 text-muted">Đang tải dữ liệu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let apiBase = document.body.getAttribute('data-api-base') || '';
+        let token = document.body.getAttribute('data-token') || '';
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadFeedbacks();
+        });
+
+        function loadFeedbacks() {
+            // Note: We need to see all feedbacks including hidden ones in BackOffice.
+            // But wait, our API `GET /api/feedbacks` filters `IsHidden == false`.
+            // How does admin see hidden feedbacks? 
+            // The OData endpoint `GET /api/feedbacks` might only return visible ones.
+            // Let's modify the controller to return all if Admin, or we just rely on OData to fetch everything if we change the controller.
+            // Wait, the user said "gọi OData expand kèm tên sản phẩm, tên khách hàng và hiển thị rõ cờ Trạng thái: 'Đang hiển thị' hoặc 'Đã ẩn'".
+            // If the controller currently filters IsHidden == false, Admin won't see hidden ones.
+            // I should update the Controller to let Admin see all, or I can just assume the prompt meant "hiển thị rõ cờ" so Admin sees them.
+            // I will update the controller to NOT filter if User is Staff/Admin. I will do that via a multi-replace.
+
+            fetch(`${apiBase}/api/Feedbacks?$expand=Variant($expand=Product),Customer&$orderby=CreatedAt desc`, {
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.querySelector('#feedbackTable tbody');
+                tbody.innerHTML = '';
+                
+                let items = data.value || data;
+                if(items.length === 0){
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">Chưa có đánh giá nào.</td></tr>`;
+                    return;
+                }
+
+                items.forEach(f => {
+                    let stars = '';
+                    for(let i=1; i<=5; i++) {
+                        stars += i <= f.Rating ? '<i class="bi bi-star-fill text-warning"></i> ' : '<i class="bi bi-star text-warning"></i> ';
+                    }
+
+                    let statusBadge = f.IsHidden ? '<span class="badge bg-secondary" id="badge-'+f.FeedbackId+'">Đã ẩn</span>' : '<span class="badge bg-success" id="badge-'+f.FeedbackId+'">Đang hiển thị</span>';
+                    let actionBtn = f.IsHidden 
+                        ? `<button class="btn btn-sm btn-secondary disabled" id="btn-${f.FeedbackId}">Đã ẩn</button>`
+                        : `<button class="btn btn-sm btn-outline-danger" id="btn-${f.FeedbackId}" onclick="hideFeedback(${f.FeedbackId})"><i class="bi bi-eye-slash"></i> Ẩn</button>`;
+
+                    const productName = f.Variant?.Product?.ProductName || 'Unknown';
+                    const customerName = f.Customer?.FullName || 'Unknown';
+                    const dateStr = f.CreatedAt ? new Date(f.CreatedAt).toLocaleDateString('vi-VN') : '';
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold text-dark">${productName}</div>
+                                <div class="small text-muted">Variant ID: ${f.VariantId}</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">${customerName}</div>
+                                <div class="small text-muted">${dateStr}</div>
+                            </td>
+                            <td>${stars}</td>
+                            <td style="max-width: 300px;" class="text-wrap">${f.Comment}</td>
+                            <td>${statusBadge}</td>
+                            <td class="text-end pe-4">${actionBtn}</td>
+                        </tr>
+                    `;
+                });
+            })
+            .catch(err => {
+                document.querySelector('#feedbackTable tbody').innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">Lỗi khi tải dữ liệu.</td></tr>`;
+            });
+        }
+
+        function hideFeedback(id) {
+            Swal.fire({
+                title: 'Ẩn đánh giá?',
+                text: "Bạn có chắc chắn muốn ẩn đánh giá này khỏi Storefront?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Có, ẩn ngay',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`${apiBase}/api/feedbacks/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': 'Bearer ' + token
+                        }
+                    })
+                    .then(res => {
+                        return res.json().then(data => {
+                            if(!res.ok) throw new Error(data.message || 'Lỗi khi ẩn đánh giá.');
+                            return data;
+                        });
+                    })
+                    .then(data => {
+                        // Change badge to "Đã ẩn"
+                        let badge = document.getElementById(`badge-${id}`);
+                        if(badge) {
+                            badge.className = 'badge bg-secondary';
+                            badge.innerText = 'Đã ẩn';
+                        }
+                        
+                        // Disable button
+                        let btn = document.getElementById(`btn-${id}`);
+                        if(btn) {
+                            btn.className = 'btn btn-sm btn-secondary disabled';
+                            btn.innerHTML = 'Đã ẩn';
+                            btn.removeAttribute('onclick');
+                        }
+
+                        Swal.fire({
+                            title: 'Thành công',
+                            text: data.message,
+                            icon: 'success',
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    })
+                    .catch(err => Swal.fire('Lỗi', err.message, 'error'));
+                }
+            })
+        }
+    </script>
+}

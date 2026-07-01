@@ -48,7 +48,7 @@ namespace WebClient.Pages.Auth
                 }
                 else if (User.IsInRole("WarehouseManager"))
                 {
-                    Response.Redirect("/admin/warehouse"); // Địa bàn của Manager: Quản lý kho nhập seri
+                    Response.Redirect("/BackOffice/Warehouse/Import"); // Địa bàn của Manager: Quản lý kho nhập seri
                 }
                 else
                 {
@@ -118,7 +118,7 @@ namespace WebClient.Pages.Auth
                     }
                     else if (result.Role == "WarehouseManager")
                     {
-                        defaultUrl = "/admin/warehouse"; // Đường dẫn đến trang nhập kho của Mem 2
+                        defaultUrl = "/BackOffice/Warehouse/Import"; // Đường dẫn đến trang nhập kho của Mem 2
                     }
 
                     string targetUrl = ReturnUrl ?? defaultUrl;

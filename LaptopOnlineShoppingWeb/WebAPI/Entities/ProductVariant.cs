@@ -15,7 +15,7 @@ public partial class ProductVariant
     public string? SSD { get; set; }
     public string? Color { get; set; }
 
-    [Column(TypeName = "decimal(18,2)")]
+    [Range(0.01, double.MaxValue, ErrorMessage = "Giá tiền phải lớn hơn 0")]
     public decimal Price { get; set; }
 
     [JsonIgnore]

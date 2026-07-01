@@ -6,21 +6,21 @@ namespace WebClient
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // 1. Cung c?p HttpContext ?? ??c Token/Cookie trong các Service
             builder.Services.AddHttpContextAccessor();
+            builder.Services.AddTransient<WebClient.Handlers.AuthHeaderHandler>();
 
-            // 2. Add HttpClient for making API calls (Named Client)
+            // Add HttpClient for making API calls
             builder.Services.AddHttpClient("WebAPI", client =>
             {
                 client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"]!);
                 client.DefaultRequestHeaders.Add("Accept", "application/json");
-            });
+            }).AddHttpMessageHandler<WebClient.Handlers.AuthHeaderHandler>();
 
-            // 3. ??NG KÝ DEPENDENCY INJECTION CHO CÁC SERVICE (WEB CLIENT)
-            // L?u ý: B?n c?n thay th? các tên Interface và Class d??i ?ây 
-            // sao cho kh?p v?i tên file th?c t? b?n t?o trong th? m?c Services c?a project WebClient.
+            // 3. ??NG Kï¿½ DEPENDENCY INJECTION CHO Cï¿½C SERVICE (WEB CLIENT)
+            // L?u ï¿½: B?n c?n thay th? cï¿½c tï¿½n Interface vï¿½ Class d??i ?ï¿½y 
+            // sao cho kh?p v?i tï¿½n file th?c t? b?n t?o trong th? m?c Services c?a project WebClient.
 
-            // Ví d? ??ng ký các Service g?i API:
+            // Vï¿½ d? ??ng kï¿½ cï¿½c Service g?i API:
             // builder.Services.AddScoped<IAuthApiClient, AuthApiClient>();
             // builder.Services.AddScoped<IProductApiClient, ProductApiClient>();
             // builder.Services.AddScoped<ICartApiClient, CartApiClient>();
@@ -60,7 +60,7 @@ namespace WebClient
 
             app.UseRouting();
 
-            // C?u hình Middleware
+            // C?u hï¿½nh Middleware
             app.UseAuthentication();
             app.UseAuthorization();
 
