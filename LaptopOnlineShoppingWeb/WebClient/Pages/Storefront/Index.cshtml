@@ -5,7 +5,6 @@
 }
 
 <div class="container py-4">
-    <!-- Hero Header Section -->
     <div class="row mb-5 text-center bg-light p-5 rounded-4 shadow-sm border position-relative overflow-hidden" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
         <div class="col-12 position-relative">
             <h1 class="display-4 fw-bold text-primary mb-3">Thế Giới Laptop Online</h1>
@@ -13,7 +12,6 @@
         </div>
     </div>
 
-    <!-- Search and Filter Form -->
     <div class="card shadow-sm border mb-4 rounded-3">
         <div class="card-body bg-white p-4">
             <form method="get" class="row g-3">
@@ -46,32 +44,28 @@
         </div>
     </div>
 
-    <!-- Products Grid -->
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-        @if (Model.Laptops != null && Model.Laptops.Count > 0)
+        @if (Modelc.ProductVariants != null && Modelc.ProductVariants.Count > 0)
         {
-            foreach (var item in Model.Laptops)
+            foreach (var item in Modelc.ProductVariants)
             {
-                var fullImageUrl = item.ImageUrl.StartsWith("http") 
-                    ? item.ImageUrl 
-                    : (string.IsNullOrEmpty(Model.ApiBaseUrl) ? "" : Model.ApiBaseUrl) + item.ImageUrl;
+                var fullImageUrl = item.ImageUrl != null && item.ImageUrl.StartsWith("http")
+                ? item.ImageUrl
+                : (string.IsNullOrEmpty(Model.ApiBaseUrl) ? "" : Model.ApiBaseUrl) + item.ImageUrl;
 
                 <div class="col">
                     <div class="card h-100 border-0 shadow-sm rounded-3 product-card transition-hover">
-                        <!-- Product Badge -->
                         <span class="badge bg-success position-absolute m-2 end-0 rounded-pill">Sẵn hàng</span>
-                        
-                        <!-- Product Image -->
+
                         <div class="d-flex align-items-center justify-content-center bg-light rounded-top-3 p-3 position-relative" style="height: 200px; overflow: hidden;">
-                            <img src="@fullImageUrl" class="card-img-top img-fluid" style="max-height: 100%; max-width: 100%; object-fit: contain;" alt="@item.LaptopName" onerror="this.onerror=null;this.src='/favicon.ico';this.style.width='50px';this.style.height='50px';" />
+                            <img src="@fullImageUrl" class="card-img-top img-fluid" style="max-height: 100%; max-width: 100%; object-fit: contain;" alt="@itemc.ProductVariantName" onerror="this.onerror=null;this.src='/favicon.ico';this.style.width='50px';this.style.height='50px';" />
                         </div>
-                        
-                        <!-- Product Body -->
+
                         <div class="card-body d-flex flex-column p-3">
                             <span class="text-uppercase text-muted fw-bold small">@item.Category?.CategoryName</span>
-                            <h5 class="card-title text-dark fw-bold mt-1 text-truncate" title="@item.LaptopName">@item.LaptopName</h5>
-                            <p class="text-secondary small mb-2">Mã sản phẩm: <span class="badge bg-secondary-subtle text-secondary">@item.LaptopCode</span></p>
-                            
+                            <h5 class="card-title text-dark fw-bold mt-1 text-truncate" title="@itemc.ProductVariantName">@itemc.ProductVariantName</h5>
+                            <p class="text-secondary small mb-2">Mã sản phẩm: <span class="badge bg-secondary-subtle text-secondary">@itemc.ProductVariantCode</span></p>
+
                             <div class="mt-auto d-flex justify-content-between align-items-center pt-2 border-top">
                                 <div>
                                     <span class="text-danger fw-bold fs-5">@item.Price.ToString("N0") <span class="small" style="font-size: 11px;">đ</span></span>
@@ -80,22 +74,21 @@
                             </div>
                         </div>
 
-                        <!-- Product Footer Buttons -->
                         <div class="card-footer bg-white border-0 p-3 pt-0">
                             <div class="row g-2 align-items-center">
                                 <div class="col-4">
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text">SL</span>
-                                        <input type="number" min="1" value="1" max="@item.StockQuantity" class="form-control form-control-sm buy-qty" data-laptop-id="@item.LaptopId" />
+                                        <input type="number" min="1" value="1" max="@item.StockQuantity" class="form-control form-control-sm buy-qty" data-variant-id="@item.VariantId" />
                                     </div>
                                 </div>
                                 <div class="col-4">
-                                    <button class="btn btn-outline-primary btn-sm w-100 rounded-pill btn-add-cart" data-laptop-id="@item.LaptopId">
+                                    <button class="btn btn-outline-primary btn-sm w-100 rounded-pill btn-add-cart" data-variant-id="@item.VariantId">
                                         <i class="bi bi-cart-plus"></i> Thêm giỏ hàng
                                     </button>
                                 </div>
                                 <div class="col-4">
-                                    <button class="btn btn-primary btn-sm w-100 rounded-pill text-white btn-buy-now" data-laptop-id="@item.LaptopId">
+                                    <button class="btn btn-primary btn-sm w-100 rounded-pill text-white btn-buy-now" data-variant-id="@item.VariantId">
                                         <i class="bi bi-bag-check"></i> Mua ngay
                                     </button>
                                 </div>
@@ -124,10 +117,12 @@
         transition: transform 0.25s ease-in-out, box-shadow 0.25s ease-in-out;
         border: 1px solid #f0f0f0 !important;
     }
-    .product-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
-    }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+        }
+
     .transition-hover {
         transition: all 0.25s ease;
     }
@@ -136,29 +131,26 @@
 @section Scripts {
     <script>
         $(document).ready(function() {
-            // Hàm bọc để gọi await cho cái getCartCount lúc tải trang
             async function initCartCount() {
                 try {
                     const count = await getCartCount();
                     $('#cartCount').text(count || 0);
                 } catch (e) { console.error("Không thể lấy số lượng giỏ hàng", e); }
             }
-            // Gọi hàm khởi tạo
             initCartCount();
 
             // Xử lý nút Thêm vào giỏ hàng
             $('.btn-add-cart').click(async function() {
-                var laptopId = $(this).data('laptop-id');
-                var qtyInput = $(`.buy-qty[data-laptop-id='${laptopId}']`);
+                // ĐÃ SỬA: Lấy variant-id
+                var variantId = $(this).data('variant-id');
+                var qtyInput = $(`.buy-qty[data-variant-id='${variantId}']`);
                 var qty = parseInt(qtyInput.val()) || 1;
 
-                // Gọi API helper từ cart.js
-                const res = await addToCart(laptopId, qty);
+                // Gọi API helper từ cart.js (Đảm bảo file cart.js của bạn cũng dùng variantId truyền vào)
+                const res = await addToCart(variantId, qty);
 
                 if (res && res.ok) {
-                    // Update cart badge
                     initCartCount();
-
                     Swal.fire({
                         title: 'Đã thêm vào giỏ hàng',
                         icon: 'success',
@@ -166,7 +158,6 @@
                         showConfirmButton: false
                     });
                 } else {
-                    // XỬ LÝ LỖI CHƯA ĐĂNG NHẬP 401 TỪ cart.js
                     if (res && res.message === 'NOT_AUTHENTICATED') {
                         Swal.fire({
                             title: 'Vui lòng đăng nhập',
@@ -177,12 +168,10 @@
                             cancelButtonText: 'Đóng'
                         }).then((result) => {
                             if (result.isConfirmed) {
-                                // Lưu lại đường dẫn hiện tại (ReturnUrl) để đăng nhập xong quay lại đây luôn
                                 window.location.href = `/Auth/CustomerLogin?ReturnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`;
                             }
                         });
                     } else {
-                        // Các lỗi khác như vượt quá tồn kho...
                         Swal.fire({
                             title: 'Lỗi',
                             text: res && res.message ? res.message : 'Không thể thêm vào giỏ hàng',
@@ -194,7 +183,6 @@
 
             // Xử lý nút Mua ngay (Buy Now)
             $('.btn-buy-now').click(function() {
-                // Kiểm tra bằng logic: Nếu không có dấu hiệu đã đăng nhập (vd không có menu Xin chào)
                 var isLoggedIn = @(User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Customer") ? "true" : "false");
 
                 if (!isLoggedIn) {
@@ -213,11 +201,12 @@
                     return;
                 }
 
-                var laptopId = $(this).data('laptop-id');
-                var qtyInput = $(`.buy-qty[data-laptop-id='${laptopId}']`);
+                // ĐÃ SỬA: Lấy variant-id và truyền vào URL Checkout
+                var variantId = $(this).data('variant-id');
+                var qtyInput = $(`.buy-qty[data-variant-id='${variantId}']`);
                 var qty = parseInt(qtyInput.val()) || 1;
 
-                var url = `/Storefront/Checkout?buynow=true&laptopid=${laptopId}&qty=${qty}`;
+                var url = `/Storefront/Checkout?buynow=true&variantid=${variantId}&qty=${qty}`;
                 window.location.href = url;
             });
         });

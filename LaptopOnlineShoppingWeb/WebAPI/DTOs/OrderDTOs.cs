@@ -12,7 +12,7 @@ namespace WebAPI.DTOs
 
     public class DirectCheckoutRequestDTO
     {
-        public int LaptopId { get; set; }
+        public int VariantId { get; set; }
         public int Quantity { get; set; }
         public string ShippingAddress { get; set; } = null!;
         public string PaymentMethod { get; set; } = null!;
@@ -28,15 +28,17 @@ namespace WebAPI.DTOs
         public string PaymentMethod { get; set; } = null!;
         public bool? PaymentStatus { get; set; }
         public string? OrderStatus { get; set; }
+        public int? BranchId { get; set; }
     }
 
     public class OrderDetailResponseDTO
     {
-        public int LaptopId { get; set; }
+        public int VariantId { get; set; }
         public string LaptopName { get; set; } = null!;
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal TotalPrice => Quantity * UnitPrice;
+        public List<string> SerialNumbers { get; set; } = new List<string>();
     }
 
     public class OrderWithDetailsResponseDTO : OrderResponseDTO

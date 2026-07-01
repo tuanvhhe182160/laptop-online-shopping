@@ -12,7 +12,7 @@ namespace WebClient.Models
 
     public class CartItemViewModel
     {
-        public int LaptopId { get; set; }
+        public int VariantId { get; set; }
         public string LaptopName { get; set; } = null!;
         public decimal UnitPrice { get; set; }
         public int Quantity { get; set; }

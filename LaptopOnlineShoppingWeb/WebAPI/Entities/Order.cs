@@ -22,6 +22,9 @@ public partial class Order
 
     public virtual Customer Customer { get; set; } = null!;
 
+    public int? BranchId { get; set; }
+
+    [JsonIgnore]
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
 
     public virtual ICollection<PhysicalProduct> PhysicalProducts { get; set; } = new List<PhysicalProduct>();

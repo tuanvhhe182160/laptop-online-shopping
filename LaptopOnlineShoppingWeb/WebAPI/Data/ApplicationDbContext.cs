@@ -19,6 +19,9 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<Cart> Carts { get; set; }
 
+    public virtual DbSet<ProductVariant> ProductVariants { get; set; }
+    public virtual DbSet<PhysicalProduct> PhysicalProducts { get; set; } // Thêm luôn bảng này nếu chưa có
+
     public virtual DbSet<CartItem> CartItems { get; set; }
 
     public virtual DbSet<Category> Categories { get; set; }
@@ -83,14 +86,14 @@ public partial class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<CartItem>(entity =>
         {
-            entity.HasKey(e => new { e.CartId, e.VariantId }).HasName("PK__CartItem__0156F48F142D23F4");
+            entity.HasKey(e => new { e.CartId, e.VariantId }).HasName("PK__CartItem__0023D5DF6D8A92BE");
 
             entity.HasOne(d => d.Cart).WithMany(p => p.CartItems)
                 .HasForeignKey(d => d.CartId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__CartItems__CartI__6D0D32F4");
 
-            entity.HasOne(d => d.Variant).WithMany(p => p.CartItems)
+            entity.HasOne(d => dc.ProductVariant).WithMany(p => p.CartItems)
                 .HasForeignKey(d => d.VariantId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__CartItems__Varia__6E01572D");
@@ -134,20 +137,22 @@ public partial class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Feedback>(entity =>
         {
-            entity.HasKey(e => e.FeedbackId).HasName("PK__Feedback__6A4BEDD6EE12FBEB");
+            entity.HasKey(e => e.VariantId).HasName("PK__Laptops__19F026843BB41F92");
 
-            entity.Property(e => e.CreatedAt)
+            entity.HasIndex(e => ec.ProductVariantCode, "UQ__Laptops__77FFE85DC40CBF34").IsUnique();
+
+            entity.Property(e => e.CreatedDate)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
-            entity.Property(e => e.IsHidden).HasDefaultValue(false);
+            entity.Property(e => ec.ProductVariantCode)
+                .HasMaxLength(20)
+                .IsUnicode(false);
+            entity.Property(e => ec.ProductVariantName).HasMaxLength(150);
+            entity.Property(e => e.Price).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.Status).HasDefaultValue(true);
 
-            entity.HasOne(d => d.Customer).WithMany(p => p.Feedbacks)
-                .HasForeignKey(d => d.CustomerId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Feedbacks__Custo__73BA3083");
-
-            entity.HasOne(d => d.Variant).WithMany(p => p.Feedbacks)
-                .HasForeignKey(d => d.VariantId)
+            entity.HasOne(d => d.Category).WithMany(p => pc.ProductVariants)
+                .HasForeignKey(d => d.CategoryId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Feedbacks__Varia__74AE54BC");
         });
@@ -179,16 +184,11 @@ public partial class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<OrderDetail>(entity =>
         {
-            entity.HasKey(e => new { e.OrderId, e.VariantId }).HasName("PK__OrderDet__937A78F7EBD2B470");
+            entity.HasKey(e => new { e.OrderId, e.VariantId }).HasName("PK__OrderDet__920F59A7CAEF61D5");
 
             entity.Property(e => e.UnitPrice).HasColumnType("decimal(18, 2)");
 
-            entity.HasOne(d => d.Order).WithMany(p => p.OrderDetails)
-                .HasForeignKey(d => d.OrderId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__OrderDeta__Order__5CD6CB2B");
-
-            entity.HasOne(d => d.Variant).WithMany(p => p.OrderDetails)
+            entity.HasOne(d => dc.ProductVariant).WithMany(p => p.OrderDetails)
                 .HasForeignKey(d => d.VariantId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__OrderDeta__Varia__5DCAEF64");
