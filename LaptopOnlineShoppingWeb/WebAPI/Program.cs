@@ -3,10 +3,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OData.ModelBuilder;
 using System.Text;
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.OData;
-using Microsoft.OData.ModelBuilder;
 using WebAPI.Data;
 using WebAPI.Entities;
 using WebAPI.Repositories;
@@ -27,15 +26,16 @@ namespace WebAPI
             //Add repository pattern
             builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
-            builder.Services.AddScoped<ICartRepository, CartRepository>();
-            builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+            //builder.Services.AddScoped<ICartRepository, CartRepository>();
+            //builder.Services.AddScoped<IOrderRepository, OrderRepository>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 
             //Add services
-            builder.Services.AddScoped<ICustomerService, CustomerService>();
-            builder.Services.AddScoped<ICartService, CartService>();
-            builder.Services.AddScoped<IOrderService, OrderService>();
+            //builder.Services.AddScoped<ICustomerService, CustomerService>();
+            //builder.Services.AddScoped<ICartService, CartService>();
+            //builder.Services.AddScoped<IOrderService, OrderService>();
+            builder.Services.AddScoped<IEmailService, EmailService>();
 
             //Add singleton pattern
             builder.Services.AddSingleton<SystemConfigService>();
@@ -106,8 +106,12 @@ namespace WebAPI
             }
 
             app.UseHttpsRedirection();
-            app.UseCors("AllowClient");
+
             app.UseStaticFiles();
+
+            app.UseRouting();
+
+            app.UseCors("AllowClient");
 
             app.UseAuthentication();
             app.UseAuthorization();

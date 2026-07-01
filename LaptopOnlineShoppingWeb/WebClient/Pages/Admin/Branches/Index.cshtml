@@ -1,0 +1,235 @@
+﻿@page "/admin/branches"
+@{
+    ViewData["Title"] = "Quản Lý Mạng Lưới Chi Nhánh";
+    Layout = "_AdminLayout";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-extrabold text-dark mb-0">
+                <i class="bi bi-buildings-fill text-primary me-2"></i>HỆ THỐNG CHI NHÁNH
+            </h3>
+            <p class="text-muted small mb-0">Quản lý địa điểm vật lý phân phối sản phẩm & nhân sự</p>
+        </div>
+        <button class="btn btn-primary btn-lg fw-bold shadow-sm d-flex align-items-center" onclick="openCreateModal()">
+            <i class="bi bi-plus-circle-fill me-2 fs-5"></i> THÊM CHI NHÁNH
+        </button>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary text-uppercase small fw-bold tracking-wider">
+                        <tr>
+                            <th class="ps-4 text-center" style="width: 80px;">ID</th>
+                            <th style="width: 280px;">Tên Chi Nhánh</th>
+                            <th>Địa Chỉ Vật Lý</th>
+                            <th class="text-end pe-4" style="width: 180px;">Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="branches-tbody">
+                        <tr>
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                <span class="spinner-border spinner-border-sm me-2 text-primary"></span> Đang kết nối đến Trụ sở chính...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="branchModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-dark text-white p-4">
+                <h5 class="modal-title fw-bold" id="modalTitle">Thêm Chi Nhánh Mới</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form id="branchForm" onsubmit="saveBranch(event)">
+                <div class="modal-body p-4">
+                    <input type="hidden" id="branchId" value="0" />
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted tracking-wider">TÊN CHI NHÁNH <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-shop text-muted"></i></span>
+                            <input type="text" id="branchName" class="form-control form-control-lg border-start-0 ps-0 fw-bold" required placeholder="VD: Chi nhánh Quận 1, TP.HCM..." />
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold text-muted tracking-wider">ĐỊA CHỈ GIAO DỊCH</label>
+                        <textarea id="branchAddress" class="form-control" rows="3" placeholder="VD: Tòa nhà Bitexco, Số 2 Hải Triều..."></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light p-3 justify-content-end">
+                    <button type="button" class="btn btn-secondary px-4 fw-medium" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm" id="btn-save">
+                        <i class="bi bi-floppy-fill me-2"></i> LƯU DỮ LIỆU
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const BRANCH_API = "https://localhost:7136/api/Branches";
+
+        let branchModalInstance = null;
+        let currentBranches = []; // Biến bẫy dữ liệu trong RAM
+
+        function getAuthHeaders() {
+            return {
+                "Authorization": `Bearer ${localStorage.getItem("token")}`,
+                "Content-Type": "application/json"
+            };
+        }
+
+        async function loadBranches() {
+            const tbody = document.getElementById("branches-tbody");
+            try {
+                const res = await fetch(BRANCH_API, { headers: getAuthHeaders() });
+                if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+
+                currentBranches = await res.json();
+
+                if (currentBranches.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted"><i class="bi bi-inboxes fs-3 d-block mb-2"></i>Chưa có chi nhánh nào được thành lập.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = currentBranches.map(b => `
+                    <tr>
+                        <td class="ps-4 text-center fw-bold text-secondary">#${b.branchId}</td>
+                        <td class="fw-extrabold text-primary fs-6">
+                            <i class="bi bi-geo-alt-fill text-danger me-2"></i>${b.branchName}
+                        </td>
+                        <td class="text-muted small">${b.address || '<em class="text-black-50">Chưa cập nhật địa chỉ...</em>'}</td>
+                        <td class="text-end pe-4">
+                            <button class="btn btn-sm btn-outline-primary px-3 me-1 fw-medium" onclick="openEditModal(${b.branchId})">
+                                <i class="bi bi-pencil-square me-1"></i> Sửa
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger px-3 fw-medium" onclick="deleteBranch(${b.branchId}, '${b.branchName}')">
+                                <i class="bi bi-trash3 me-1"></i> Xóa
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Mất kết nối tới API Máy chủ!</td></tr>`;
+            }
+        }
+
+        function openCreateModal() {
+            document.getElementById("branchForm").reset();
+            document.getElementById("branchId").value = "0";
+            document.getElementById("modalTitle").innerText = "THÊM CHI NHÁNH MỚI";
+            branchModalInstance.show();
+        }
+
+        // Kỹ thuật gắp Memory Map cực kỳ an toàn, chống XSS
+        function openEditModal(id) {
+            const item = currentBranches.find(x => x.branchId === id);
+            if (!item) return;
+
+            document.getElementById("branchId").value = item.branchId;
+            document.getElementById("branchName").value = item.branchName;
+            document.getElementById("branchAddress").value = item.address || "";
+            document.getElementById("modalTitle").innerText = "SỬA THÔNG TIN CHI NHÁNH";
+            branchModalInstance.show();
+        }
+
+        async function saveBranch(e) {
+            e.preventDefault();
+            const id = document.getElementById("branchId").value;
+            const payload = {
+                branchId: parseInt(id),
+                branchName: document.getElementById("branchName").value.trim(),
+                address: document.getElementById("branchAddress").value.trim()
+            };
+
+            const isCreate = (id === "0");
+            const targetUrl = isCreate ? BRANCH_API : `${BRANCH_API}/${id}`;
+            const method = isCreate ? "POST" : "PUT";
+
+            try {
+                const res = await fetch(targetUrl, {
+                    method: method,
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message || "Thao tác bị từ chối!");
+                }
+
+                branchModalInstance.hide();
+                Swal.fire({
+                    title: "Thành công!",
+                    text: isCreate ? "Đã khai trương Chi nhánh mới." : "Cập nhật địa chỉ thành công.",
+                    icon: "success",
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+                loadBranches(); // Load lại bảng live
+            } catch (err) {
+                Swal.fire("Lỗi thao tác", err.message, "error");
+            }
+        }
+
+        async function deleteBranch(id, name) {
+            const confirm = await Swal.fire({
+                title: `Xóa ${name}?`,
+                text: "Hành động này sẽ xóa vĩnh viễn chi nhánh khỏi hệ thống!",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#6c757d",
+                confirmButtonText: "Xóa ngay!",
+                cancelButtonText: "Quay lại"
+            });
+
+            if (!confirm.isConfirmed) return;
+
+            try {
+                const res = await fetch(`${BRANCH_API}/${id}`, {
+                    method: "DELETE",
+                    headers: getAuthHeaders()
+                });
+
+                if (!res.ok) {
+                    const errObj = await res.json();
+                    Swal.fire({
+                        title: "Không thể xóa!",
+                        text: errObj.message || "Chi nhánh đang có hoạt động.",
+                        icon: "error",
+                        confirmButtonText: "Đã hiểu"
+                    });
+                    return;
+                }
+
+                Swal.fire("Đã xóa!", "Chi nhánh đã bị dỡ bỏ.", "success");
+                loadBranches();
+            } catch (err) {
+                Swal.fire("Lỗi hệ thống", "Không thể thực hiện lệnh xóa lúc này", "error");
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            branchModalInstance = new bootstrap.Modal(document.getElementById("branchModal"));
+            loadBranches();
+        });
+    </script>
+}

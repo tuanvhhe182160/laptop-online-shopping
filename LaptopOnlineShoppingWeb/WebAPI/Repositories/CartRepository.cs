@@ -5,14 +5,14 @@ using WebAPI.Entities;
 
 namespace WebAPI.Repositories
 {
-    public class CartRepository : GenericRepository<Cart>, ICartRepository
-    {
-        private readonly ApplicationDbContext _context;
+   public class CartRepository : GenericRepository<Cart>, ICartRepository
+   {
+       private readonly ApplicationDbContext _context;
 
-        public CartRepository(ApplicationDbContext context) : base(context)
-        {
-            _context = context;
-        }
+       public CartRepository(ApplicationDbContext context) : base(context)
+       {
+           _context = context;
+       }
 
         public async Task<Cart?> GetCartByCustomerIdAsync(int customerId)
         {

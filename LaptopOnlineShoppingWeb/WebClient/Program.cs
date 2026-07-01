@@ -35,13 +35,15 @@ namespace WebClient
                     options.LoginPath = "/Auth/Login";
                     options.AccessDeniedPath = "/Auth/AccessDenied";
                     options.ExpireTimeSpan = TimeSpan.FromHours(1);
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
                 });
 
             // 5. Add services to the container (Razor Pages)
             builder.Services.AddRazorPages(options =>
             {
                 options.Conventions.AddPageRoute("/Storefront/Index", "");
-            });
+            }).AddCookieTempDataProvider();
 
             var app = builder.Build();
 

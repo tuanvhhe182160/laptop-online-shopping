@@ -1,0 +1,227 @@
+﻿@page "/auth/profile"
+@model WebClient.Pages.Auth.ProfileModel
+@{
+    ViewData["Title"] = "Hồ Sơ Cá Nhân";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="bg-dark text-white p-4 text-center position-relative">
+                    <div class="position-absolute top-0 end-0 p-3">
+                        <span class="badge bg-primary text-white fw-bold px-3 py-2 fs-6" id="lbl-role">Đang tải...</span>
+                    </div>
+
+                    <div class="position-relative d-inline-block mt-2 mb-3">
+                        <img src="https://via.placeholder.com/120" id="img-avatar" class="rounded-circle border border-4 border-white shadow" style="width: 120px; height: 120px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/120'" />
+
+                        <label for="fileAvatar" class="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle p-2 shadow" style="cursor: pointer;" title="Đổi ảnh đại diện">
+                            <i class="bi bi-camera-fill fs-5"></i>
+                        </label>
+                        <input type="file" id="fileAvatar" class="d-none" accept=".jpg,.jpeg,.png" onchange="uploadAvatar(this)" />
+                    </div>
+
+                    <h4 class="fw-bold mb-0" id="lbl-fullname">...</h4>
+                    <p class="text-white-50 small mb-0" id="lbl-email">...</p>
+                    <div class="mt-2 text-warning fw-bold small tracking-wider" id="lbl-branch"></div>
+                </div>
+
+                <div class="card-body p-4">
+                    <ul class="nav nav-pills nav-fill mb-4 bg-light p-1 rounded-3" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active fw-bold rounded-2" data-bs-toggle="tab" href="#tab-info"><i class="bi bi-person-lines-fill me-2"></i>Thông tin chung</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link fw-bold text-danger rounded-2" data-bs-toggle="tab" href="#tab-password"><i class="bi bi-shield-lock-fill me-2"></i>Đổi mật khẩu</a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="tab-info">
+                            <form id="form-update-profile" onsubmit="updateProfile(event)">
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small fw-bold">HỌ VÀ TÊN HIỂN THỊ</label>
+                                    <input type="text" id="txt-name" class="form-control form-control-lg fw-medium" required />
+                                </div>
+
+                                <div id="area-customer-only" class="d-none">
+                                    <div class="mb-3">
+                                        <label class="form-label text-muted small fw-bold">SỐ ĐIỆN THOẠI LIÊN HỆ</label>
+                                        <input type="tel" id="txt-phone" class="form-control" placeholder="Chưa cập nhật..." />
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label text-muted small fw-bold">ĐỊA CHỈ GIAO HÀNG MẶC ĐỊNH</label>
+                                        <textarea id="txt-address" class="form-control" rows="2" placeholder="Chưa cập nhật..."></textarea>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary w-100 btn-lg fw-bold shadow-sm"><i class="bi bi-floppy me-2"></i>LƯU THAY ĐỔI</button>
+                            </form>
+                        </div>
+
+                        <div class="tab-pane fade" id="tab-password">
+                            <form id="form-change-password" onsubmit="changePassword(event)">
+
+                                @if (!Model.IsGoogleUser)
+                                {
+                                    <div class="mb-3" id="group-old-pass">
+                                        <label class="form-label text-muted small fw-bold">MẬT KHẨU HIỆN TẠI</label>
+                                        <input type="password" id="txt-old-pass" class="form-control" placeholder="••••••••" required />
+                                    </div>
+                                }
+                                else
+                                {
+                                    <input type="hidden" id="txt-old-pass" value="" />
+                                    <div class="alert alert-info small">
+                                        <i class="bi bi-info-circle me-2"></i> Bạn đang đăng nhập bằng Google. Hãy tạo mật khẩu để có thể đăng nhập bằng tài khoản thường lần sau.
+                                    </div>
+                                }
+
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small fw-bold">
+                                        @(Model.IsGoogleUser ? "MẬT KHẨU MỚI CẦN TẠO" : "MẬT KHẨU MỚI")
+                                    </label>
+                                    <input type="password" id="txt-new-pass" class="form-control" required placeholder="••••••••" />
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label text-muted small fw-bold">XÁC NHẬN LẠI MẬT KHẨU MỚI</label>
+                                    <input type="password" id="txt-confirm-pass" class="form-control" required placeholder="••••••••" />
+                                </div>
+
+                                <button type="submit" class="btn btn-danger w-100 btn-lg fw-bold shadow-sm">
+                                    <i class="bi bi-key me-2"></i>
+                                    @(Model.IsGoogleUser ? "TẠO MẬT KHẨU TRUY CẬP" : "CẬP NHẬT MẬT KHẨU")
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const PROFILE_API = "https://localhost:7136/api/Profile";
+
+        const USER_ACCESS_TOKEN = "@(User.FindFirst("AccessToken")?.Value ?? "")";
+
+        function getHeaders() {
+            return {
+                // Thay localStorage bằng biến vừa móc từ C# ra:
+                "Authorization": `Bearer ${USER_ACCESS_TOKEN}`,
+                "Content-Type": "application/json"
+            };
+        }
+
+        async function loadProfile() {
+            try {
+                const res = await fetch(`${PROFILE_API}/my-profile`, { headers: getHeaders() });
+                if (!res.ok) {
+                    Swal.fire("Lỗi", "Không thể tải thông tin hồ sơ", "error");
+                    return;
+                }
+
+                const data = await res.json();
+
+                document.getElementById("lbl-fullname").innerText = data.fullName;
+                document.getElementById("lbl-email").innerText = data.email;
+                document.getElementById("txt-name").value = data.fullName;
+
+                // Xử lý link ảnh local vs link web
+                if (data.avatarUrl) {
+                    const fullAvatarUrl = data.avatarUrl.startsWith("/") ? `https://localhost:7136${data.avatarUrl}` : data.avatarUrl;
+                    document.getElementById("img-avatar").src = fullAvatarUrl;
+                }
+
+                if (data.roleName) { // Là Admin/Staff/Manager
+                    document.getElementById("lbl-role").innerText = data.roleName;
+                    document.getElementById("lbl-branch").innerText = `📍 Chi nhánh: ${data.branchName}`;
+                } else { // Là Customer
+                    document.getElementById("lbl-role").innerText = "Khách hàng";
+                    document.getElementById("area-customer-only").classList.remove("d-none");
+                    document.getElementById("txt-phone").value = data.phone || "";
+                    document.getElementById("txt-address").value = data.address || "";
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function updateProfile(e) {
+            e.preventDefault();
+            const payload = {
+                fullName: document.getElementById("txt-name").value,
+                phone: document.getElementById("txt-phone").value,
+                address: document.getElementById("txt-address").value
+            };
+
+            const res = await fetch(`${PROFILE_API}/update-profile`, {
+                method: "PUT",
+                headers: getHeaders(),
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                Swal.fire("Thành công!", "Đã cập nhật thông tin hồ sơ.", "success");
+                loadProfile();
+            } else {
+                const err = await res.json();
+                Swal.fire("Lỗi", err.message || "Không thể cập nhật", "error");
+            }
+        }
+
+        async function changePassword(e) {
+            e.preventDefault();
+            const newPass = document.getElementById("txt-new-pass").value;
+            const confirmPass = document.getElementById("txt-confirm-pass").value;
+
+            if (newPass !== confirmPass) {
+                Swal.fire("Cảnh báo", "Mật khẩu xác nhận không khớp!", "warning");
+                return;
+            }
+
+            const res = await fetch(`${PROFILE_API}/change-password`, {
+                method: "PUT",
+                headers: getHeaders(),
+                body: JSON.stringify({
+                    oldPassword: document.getElementById("txt-old-pass").value,
+                    newPassword: newPass
+                })
+            });
+
+            if (res.ok) {
+                Swal.fire("Thành công!", "Đổi mật khẩu thành công. Vui lòng ghi nhớ mật khẩu mới.", "success");
+                document.getElementById("form-change-password").reset();
+            } else {
+                const err = await res.json();
+                Swal.fire("Thất bại", err.message || "Mật khẩu cũ không chính xác", "error");
+            }
+        }
+
+        async function uploadAvatar(input) {
+            if (!input.files || !input.files[0]) return;
+
+            const formData = new FormData();
+            formData.append("file", input.files[0]);
+
+            const res = await fetch(`${PROFILE_API}/upload-avatar`, {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` },
+                body: formData
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                const fullAvatarUrl = data.avatarUrl.startsWith("/") ? `https://localhost:7136${data.avatarUrl}` : data.avatarUrl;
+                document.getElementById("img-avatar").src = fullAvatarUrl;
+                Swal.fire("Thành công", "Đã cập nhật ảnh đại diện!", "success");
+            } else {
+                const err = await res.json();
+                Swal.fire("Lỗi upload", err.message || "File không hợp lệ", "error");
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", loadProfile);
+    </script>
+}

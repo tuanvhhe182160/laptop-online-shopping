@@ -7,22 +7,22 @@ using WebAPI.Services;
 
 namespace WebAPI.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class OrdersController : ControllerBase
-    {
-        private readonly IOrderService _service;
+   [Route("api/[controller]")]
+   [ApiController]
+   public class OrdersController : ControllerBase
+   {
+       private readonly IOrderService _service;
 
-        public OrdersController(IOrderService service)
-        {
-            _service = service;
-        }
+       public OrdersController(IOrderService service)
+       {
+           _service = service;
+       }
 
-        private int GetCurrentCustomerId()
-        {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return int.Parse(userIdStr!);
-        }
+       private int GetCurrentCustomerId()
+       {
+           var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+           return int.Parse(userIdStr!);
+       }
 
         [HttpGet]
         [EnableQuery] // Hỗ trợ OData ($filter, $orderby...)
@@ -49,13 +49,13 @@ namespace WebAPI.Controllers
             return Ok(orders.AsQueryable()); // Ép kiểu AsQueryable để OData hoạt động tối ưu
         }
 
-        [HttpGet("my-orders")]
-        [Authorize(Roles = "Customer")]
-        public async Task<IActionResult> GetMyOrders()
-        {
-            var orders = await _service.GetOrdersByCustomerAsync(GetCurrentCustomerId());
-            return Ok(orders);
-        }
+       [HttpGet("my-orders")]
+       [Authorize(Roles = "Customer")]
+       public async Task<IActionResult> GetMyOrders()
+       {
+           var orders = await _service.GetOrdersByCustomerAsync(GetCurrentCustomerId());
+           return Ok(orders);
+       }
 
         [HttpGet("{id}/details")]
         [Authorize] // Bắt buộc đăng nhập (Khách xem đơn của mình, Admin/Staff xem để duyệt)

@@ -1,5 +1,4 @@
-﻿using Azure;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Headers;
@@ -22,6 +21,8 @@ namespace WebClient.Pages.Admin.Users
         public List<UserViewModel> Users { get; set; } = new();
         public List<RoleViewModel> Roles { get; set; } = new();
 
+        public List<BranchViewModel> Branches { get; set; } = new();
+
         [BindProperty]
         public UserCreateViewModel NewUser { get; set; } = new();
 
@@ -29,6 +30,7 @@ namespace WebClient.Pages.Admin.Users
         {
             var client = CreateAuthClient();
 
+            // 1. Users
             var userResponse = await client.GetAsync("api/Users");
             if (userResponse.IsSuccessStatusCode)
             {
@@ -36,11 +38,20 @@ namespace WebClient.Pages.Admin.Users
                 Users = JsonSerializer.Deserialize<List<UserViewModel>>(userContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
             }
 
+            // 2. Roles
             var roleResponse = await client.GetAsync("api/Users/roles");
             if (roleResponse.IsSuccessStatusCode)
             {
                 var roleContent = await roleResponse.Content.ReadAsStringAsync();
                 Roles = JsonSerializer.Deserialize<List<RoleViewModel>>(roleContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+            }
+
+            // 3. Branches
+            var branchResponse = await client.GetAsync("api/Branches");
+            if (branchResponse.IsSuccessStatusCode)
+            {
+                var branchContent = await branchResponse.Content.ReadAsStringAsync();
+                Branches = JsonSerializer.Deserialize<List<BranchViewModel>>(branchContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
             }
         }
 
@@ -49,7 +60,18 @@ namespace WebClient.Pages.Admin.Users
             var client = CreateAuthClient();
             var content = new StringContent(JsonSerializer.Serialize(NewUser), Encoding.UTF8, "application/json");
 
-            await client.PostAsync("api/Users", content);
+            var response = await client.PostAsync("api/Users", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                TempData["SuccessMessage"] = $"Đã cấp tài khoản [{NewUser.Username}] thành công!";
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                TempData["ErrorMessage"] = $"Lỗi tạo tài khoản: {error}";
+            }
+
             return RedirectToPage();
         }
 
@@ -66,7 +88,7 @@ namespace WebClient.Pages.Admin.Users
             else
             {
                 var error = await response.Content.ReadAsStringAsync();
-                TempData["ErrorMessage"] = $"Lỗi cập nhật (Mã {(int)response.StatusCode}): {error}";
+                TempData["ErrorMessage"] = $"Lỗi cập nhật: {error}";
             }
             return RedirectToPage();
         }
@@ -82,4 +104,6 @@ namespace WebClient.Pages.Admin.Users
             return client;
         }
     }
+
+    public record BranchViewModel(int BranchId, string BranchName);
 }
