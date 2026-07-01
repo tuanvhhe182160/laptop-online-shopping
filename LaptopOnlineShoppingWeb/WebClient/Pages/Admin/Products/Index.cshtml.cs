@@ -17,7 +17,12 @@ namespace WebClient.Pages.Admin.Products
 
         public async Task OnGetAsync()
         {
+            var token = User.FindFirst("AccessToken")?.Value;
             var client = _httpClientFactory.CreateClient("WebAPI");
+            if (!string.IsNullOrEmpty(token))
+            {
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            }
             var response = await client.GetAsync("api/Categories");
             if (response.IsSuccessStatusCode)
             {

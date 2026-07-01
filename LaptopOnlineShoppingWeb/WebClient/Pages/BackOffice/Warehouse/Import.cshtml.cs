@@ -28,13 +28,13 @@ namespace WebClient.Pages.BackOffice.Warehouse
             try
             {
                 // Fetch variants with Product details for dropdown
-                var response = await client.GetAsync("odata/ProductVariants?$expand=Product");
+                var response = await client.GetAsync("api/ProductVariants?$expand=Product");
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
                     using (var doc = JsonDocument.Parse(content))
                     {
-                        if (doc.RootElement.TryGetProperty("value", out var valueElement))
+                        if (doc.RootElement.ValueKind == JsonValueKind.Object && doc.RootElement.TryGetProperty("value", out var valueElement))
                         {
                             Variants = JsonSerializer.Deserialize<List<ProductVariant>>(valueElement.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<ProductVariant>();
                         }

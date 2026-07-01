@@ -176,9 +176,10 @@
             });
 
             $('.btn-buy-now').click(function() {
-                var isLoggedIn = @(User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Customer") ? "true" : "false");
+                var isAuthenticated = @(User.Identity != null && User.Identity.IsAuthenticated ? "true" : "false");
+                var isCustomer = @(User.IsInRole("Customer") ? "true" : "false");
 
-                if (!isLoggedIn) {
+                if (!isAuthenticated) {
                     Swal.fire({
                         title: 'Vui lòng đăng nhập',
                         text: 'Bạn cần đăng nhập để tiến hành thanh toán.',
@@ -188,6 +189,15 @@
                         cancelButtonText: 'Đóng'
                     }).then((result) => {
                         if (result.isConfirmed) window.location.href = `/Auth/CustomerLogin?ReturnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+                    });
+                    return;
+                }
+                
+                if (isAuthenticated && !isCustomer) {
+                    Swal.fire({ 
+                        title: 'Tài khoản không hợp lệ', 
+                        text: 'Bạn đang đăng nhập bằng tài khoản Quản trị / Nhân viên. Chức năng mua hàng chỉ dành cho Khách Hàng.', 
+                        icon: 'error' 
                     });
                     return;
                 }

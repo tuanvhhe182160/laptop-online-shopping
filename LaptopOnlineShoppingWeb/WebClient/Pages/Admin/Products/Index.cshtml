@@ -13,6 +13,46 @@
         </button>
     </div>
 
+    <!-- OData Filter Toolbar -->
+    <div class="card shadow-sm border-0 mb-4 bg-light">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Tìm kiếm Tên/Mã</label>
+                    <input type="text" id="filter_search" class="form-control" placeholder="Nhập từ khóa..." />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Hãng sản xuất</label>
+                    <select id="filter_categoryId" class="form-select">
+                        <option value="">-- Tất cả Hãng --</option>
+                        @foreach (var c in Model.Categories)
+                        {
+                            <option value="@c.CategoryId">@c.CategoryName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Trạng thái</label>
+                    <select id="filter_status" class="form-select">
+                        <option value="">-- Tất cả --</option>
+                        <option value="true">Đang bán</option>
+                        <option value="false">Ngừng bán</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <div class="d-flex w-100 gap-2">
+                        <button class="btn btn-primary flex-fill" onclick="loadProducts()">
+                            <i class="bi bi-funnel"></i> Lọc
+                        </button>
+                        <button class="btn btn-secondary flex-fill" onclick="resetFilters()">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Product Grid -->
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body p-0">
@@ -184,8 +224,35 @@
         });
 
         // ================= PRODUCT LOGIC =================
+        function resetFilters() {
+            document.getElementById('filter_search').value = '';
+            document.getElementById('filter_categoryId').value = '';
+            document.getElementById('filter_status').value = '';
+            loadProducts();
+        }
+
+        function getODataQueryString() {
+            let filters = [];
+            const search = document.getElementById('filter_search')?.value.trim();
+            const categoryId = document.getElementById('filter_categoryId')?.value;
+            const status = document.getElementById('filter_status')?.value;
+
+            if (search) {
+                filters.push(`(contains(tolower(productName), tolower('${search}')) or contains(tolower(productCode), tolower('${search}')))`);
+            }
+            if (categoryId) {
+                filters.push(`categoryId eq ${categoryId}`);
+            }
+            if (status) {
+                filters.push(`status eq ${status}`);
+            }
+
+            return filters.length > 0 ? `?$filter=${filters.join(' and ')}` : '';
+        }
+
         function loadProducts() {
-            fetch(`${apiBase}/api/Products`, { headers: getHeaders() })
+            const query = getODataQueryString();
+            fetch(`${apiBase}/api/Products${query}`, { headers: getHeaders() })
             .then(res => res.json())
             .then(data => {
                 const tbody = document.querySelector('#productsTable tbody');
@@ -195,21 +262,21 @@
                     return;
                 }
                 data.forEach(p => {
-                    let statusBadge = p.Status ? '<span class="badge bg-success">Đang bán</span>' : '<span class="badge bg-secondary">Ngừng bán</span>';
+                    let statusBadge = p.status ? '<span class="badge bg-success">Đang bán</span>' : '<span class="badge bg-secondary">Ngừng bán</span>';
                     tbody.innerHTML += `
                         <tr>
-                            <td class="ps-4 text-secondary fw-bold">${p.ProductCode}</td>
-                            <td class="fw-bold text-dark">${p.ProductName}</td>
-                            <td>${p.CategoryName || ''}</td>
+                            <td class="ps-4 text-secondary fw-bold">${p.productCode}</td>
+                            <td class="fw-bold text-dark">${p.productName}</td>
+                            <td>${p.category?.categoryName || ''}</td>
                             <td>${statusBadge}</td>
                             <td class="text-end pe-4">
-                                <button class="btn btn-sm btn-outline-info me-1" onclick="openVariants(${p.ProductId}, '${p.ProductName}')">
+                                <button class="btn btn-sm btn-outline-info me-1" onclick="openVariants(${p.productId}, '${p.productName}')">
                                     <i class="bi bi-list-check"></i> Biến thể
                                 </button>
                                 <button class="btn btn-sm btn-outline-primary me-1" onclick='editProduct(${JSON.stringify(p)})'>
                                     <i class="bi bi-pencil-square"></i> Sửa
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(${p.ProductId})">
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(${p.productId})">
                                     <i class="bi bi-trash"></i> Xóa
                                 </button>
                             </td>
@@ -228,12 +295,12 @@
         }
 
         function editProduct(p) {
-            document.getElementById('p_id').value = p.ProductId;
-            document.getElementById('p_code').value = p.ProductCode;
-            document.getElementById('p_name').value = p.ProductName;
-            document.getElementById('p_categoryId').value = p.CategoryId;
-            document.getElementById('p_status').value = p.Status ? "true" : "false";
-            document.getElementById('p_description').value = p.Description || "";
+            document.getElementById('p_id').value = p.productId;
+            document.getElementById('p_code').value = p.productCode;
+            document.getElementById('p_name').value = p.productName;
+            document.getElementById('p_categoryId').value = p.categoryId;
+            document.getElementById('p_status').value = p.status ? "true" : "false";
+            document.getElementById('p_description').value = p.description || "";
             document.getElementById('productModalTitle').innerText = "Chỉnh sửa Sản phẩm";
             pModal.show();
         }
@@ -310,31 +377,32 @@
         }
 
         function loadVariants(productId) {
-            // We can fetch from product by id to get variants easily
-            fetch(`${apiBase}/api/Products/${productId}`, { headers: getHeaders() })
+            // Lấy danh sách biến thể với OData filter và expand PhysicalProducts để tính tồn kho
+            fetch(`${apiBase}/api/ProductVariants?$filter=productId eq ${productId}&$expand=PhysicalProducts`, { headers: getHeaders() })
             .then(res => res.json())
             .then(data => {
                 const tbody = document.querySelector('#variantsTable tbody');
                 tbody.innerHTML = '';
-                const variants = data.ProductVariants || [];
+                const variants = data || [];
                 if(variants.length === 0){
                     tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">Chưa có biến thể nào.</td></tr>`;
                     return;
                 }
                 variants.forEach(v => {
+                    let inStockCount = v.physicalProducts ? v.physicalProducts.filter(p => p.status === 'InStock').length : 0;
                     tbody.innerHTML += `
                         <tr>
-                            <td class="ps-4 fw-bold">${v.Cpu || ''}</td>
-                            <td>${v.Ram || ''}</td>
-                            <td>${v.Ssd || ''}</td>
-                            <td>${v.Color || ''}</td>
-                            <td class="text-danger fw-bold">${v.Price.toLocaleString('vi-VN')} đ</td>
-                            <td><span class="badge bg-primary">${v.InStockCount}</span></td>
+                            <td class="ps-4 fw-bold">${v.cpu || ''}</td>
+                            <td>${v.ram || ''}</td>
+                            <td>${v.ssd || ''}</td>
+                            <td>${v.color || ''}</td>
+                            <td class="text-danger fw-bold">${v.price.toLocaleString('vi-VN')} đ</td>
+                            <td><span class="badge bg-primary">${inStockCount}</span></td>
                             <td class="text-end pe-4">
                                 <button class="btn btn-sm btn-outline-primary me-1" onclick='editVariant(${JSON.stringify(v)})'>
                                     Sửa
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteVariant(${v.VariantId}, ${v.ProductId})">
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteVariant(${v.variantId}, ${v.productId})">
                                     Xóa
                                 </button>
                             </td>
@@ -352,12 +420,12 @@
         }
 
         function editVariant(v) {
-            document.getElementById('v_id').value = v.VariantId;
-            document.getElementById('v_cpu').value = v.Cpu || '';
-            document.getElementById('v_ram').value = v.Ram || '';
-            document.getElementById('v_ssd').value = v.Ssd || '';
-            document.getElementById('v_color').value = v.Color || '';
-            document.getElementById('v_price').value = v.Price;
+            document.getElementById('v_id').value = v.variantId;
+            document.getElementById('v_cpu').value = v.cpu || '';
+            document.getElementById('v_ram').value = v.ram || '';
+            document.getElementById('v_ssd').value = v.ssd || '';
+            document.getElementById('v_color').value = v.color || '';
+            document.getElementById('v_price').value = v.price;
             document.getElementById('variantFormModalTitle').innerText = "Sửa Cấu hình";
             vfModal.show();
         }

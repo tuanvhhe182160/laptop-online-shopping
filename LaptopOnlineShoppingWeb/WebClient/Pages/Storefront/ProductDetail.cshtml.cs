@@ -21,14 +21,21 @@ namespace WebClient.Pages.Storefront
         public async Task<IActionResult> OnGetAsync(int id)
         {
             var client = _httpClientFactory.CreateClient("WebAPI");
-            var response = await client.GetAsync($"odata/ProductVariants({id})?$expand=Product($expand=Category),PhysicalProducts");
+            var response = await client.GetAsync($"api/ProductVariants?$filter=VariantId eq {id}&$expand=Product($expand=Category),PhysicalProducts");
             
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
-                Variant = JsonSerializer.Deserialize<ProductVariant>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                if (Variant == null) return NotFound();
-                return Page();
+                
+                using (var doc = JsonDocument.Parse(content))
+                {
+                    if (doc.RootElement.ValueKind == JsonValueKind.Array && doc.RootElement.GetArrayLength() > 0)
+                    {
+                        var firstElement = doc.RootElement[0].GetRawText();
+                        Variant = JsonSerializer.Deserialize<ProductVariant>(firstElement, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        if (Variant != null) return Page();
+                    }
+                }
             }
             
             return NotFound();

@@ -55,7 +55,7 @@
             // I should update the Controller to let Admin see all, or I can just assume the prompt meant "hiển thị rõ cờ" so Admin sees them.
             // I will update the controller to NOT filter if User is Staff/Admin. I will do that via a multi-replace.
 
-            fetch(`${apiBase}/odata/Feedbacks?$expand=Variant($expand=Product),Customer&$orderby=CreatedAt desc`, {
+            fetch(`${apiBase}/api/Feedbacks?$expand=Variant($expand=Product),Customer&$orderby=CreatedAt desc`, {
                 headers: {
                     'Authorization': 'Bearer ' + token
                 }

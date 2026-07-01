@@ -68,5 +68,36 @@ namespace WebAPI.Services
 
             return (true, "Đã ẩn đánh giá thành công (Xóa mềm).");
         }
+
+        public async Task<(bool Success, string Message)> UpdateFeedbackAsync(int feedbackId, int customerId, int rating, string comment)
+        {
+            var feedback = await _feedbackRepo.GetByIdAsync(feedbackId);
+            if (feedback == null || feedback.CustomerId != customerId)
+            {
+                return (false, "Không tìm thấy đánh giá hoặc bạn không có quyền sửa.");
+            }
+
+            feedback.Rating = rating;
+            feedback.Comment = comment;
+            
+            _feedbackRepo.Update(feedback);
+            await _feedbackRepo.SaveAsync();
+
+            return (true, "Đã cập nhật đánh giá thành công.");
+        }
+
+        public async Task<(bool Success, string Message)> DeleteFeedbackAsync(int feedbackId, int customerId)
+        {
+            var feedback = await _feedbackRepo.GetByIdAsync(feedbackId);
+            if (feedback == null || feedback.CustomerId != customerId)
+            {
+                return (false, "Không tìm thấy đánh giá hoặc bạn không có quyền xóa.");
+            }
+
+            _feedbackRepo.Delete(feedback);
+            await _feedbackRepo.SaveAsync();
+
+            return (true, "Đã xóa đánh giá thành công.");
+        }
     }
 }

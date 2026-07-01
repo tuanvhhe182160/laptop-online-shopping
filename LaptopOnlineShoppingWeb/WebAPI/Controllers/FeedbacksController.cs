@@ -80,5 +80,47 @@ namespace WebAPI.Controllers
 
             return Ok(new { message = result.Message });
         }
+
+        [HttpPut("customer/{id}")]
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> UpdateFeedback(int id, [FromBody] UpdateFeedbackDto request)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int customerId))
+            {
+                return Unauthorized(new { message = "Không xác định được danh tính khách hàng." });
+            }
+
+            var result = await _feedbackService.UpdateFeedbackAsync(id, customerId, request.Rating, request.Comment);
+
+            if (!result.Success)
+            {
+                return BadRequest(new { message = result.Message });
+            }
+
+            return Ok(new { message = result.Message });
+        }
+
+        [HttpDelete("customer/{id}")]
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> DeleteFeedback(int id)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int customerId))
+            {
+                return Unauthorized(new { message = "Không xác định được danh tính khách hàng." });
+            }
+
+            var result = await _feedbackService.DeleteFeedbackAsync(id, customerId);
+
+            if (!result.Success)
+            {
+                return BadRequest(new { message = result.Message });
+            }
+
+            return Ok(new { message = result.Message });
+        }
     }
 }

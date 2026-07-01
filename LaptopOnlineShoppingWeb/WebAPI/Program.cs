@@ -96,6 +96,7 @@ namespace WebAPI
                 .AddJsonOptions(options =>
                 {
                     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
                 });
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
@@ -133,6 +134,7 @@ namespace WebAPI
                 try
                 {
                     var context = services.GetRequiredService<ApplicationDbContext>();
+                    // Tự động tạo DB mới
                     context.Database.EnsureCreated();
                     DbInitializer.Initialize(context);
                 }

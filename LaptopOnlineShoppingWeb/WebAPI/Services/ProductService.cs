@@ -82,10 +82,28 @@ namespace WebAPI.Services
 
         public async Task<bool> DeleteProductAsync(int id)
         {
-            var product = await _productRepository.GetByIdAsync(id);
+            var product = await _productRepository.GetQueryable()
+                .Include(p => p.ProductVariants)
+                    .ThenInclude(v => v.OrderDetails)
+                .FirstOrDefaultAsync(p => p.ProductId == id);
+
             if (product == null) return false;
 
-            _productRepository.Delete(product);
+            // Kiểm tra xem sản phẩm đã có ai mua chưa (nằm trong OrderDetails)
+            bool isOrdered = product.ProductVariants.Any(v => v.OrderDetails.Any());
+
+            if (isOrdered)
+            {
+                // Soft delete: Chuyển trạng thái sang Ngừng kinh doanh
+                product.Status = false;
+                _productRepository.Update(product);
+            }
+            else
+            {
+                // Hard delete: Xóa hoàn toàn nếu chưa ai mua
+                _productRepository.Delete(product);
+            }
+            
             await _productRepository.SaveAsync();
             return true;
         }
@@ -147,8 +165,14 @@ namespace WebAPI.Services
 
         public async Task<bool> DeleteVariantAsync(int id)
         {
-            var variant = await _variantRepository.GetByIdAsync(id);
+            var variant = await _variantRepository.GetQueryable()
+                .Include(v => v.OrderDetails)
+                .FirstOrDefaultAsync(v => v.VariantId == id);
+
             if (variant == null) return false;
+
+            // Chặn xóa cứng nếu đã có người mua
+            if (variant.OrderDetails.Any()) return false;
 
             _variantRepository.Delete(variant);
             await _variantRepository.SaveAsync();

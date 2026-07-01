@@ -58,7 +58,7 @@ namespace WebClient.Pages.Storefront
             try
             {
                 // We need PhysicalProducts to count stock, and Product -> Category
-                var odataQuery = "odata/ProductVariants?$expand=PhysicalProducts,Product($expand=Category)";
+                var odataQuery = "api/ProductVariants?$expand=PhysicalProducts,Product($expand=Category)";
 
                 var filters = new List<string>();
 
@@ -98,7 +98,7 @@ namespace WebClient.Pages.Storefront
                     
                     using (var doc = JsonDocument.Parse(data))
                     {
-                        if (doc.RootElement.TryGetProperty("value", out var valueElement))
+                        if (doc.RootElement.ValueKind == JsonValueKind.Object && doc.RootElement.TryGetProperty("value", out var valueElement))
                         {
                             ProductVariants = JsonSerializer.Deserialize<List<ProductVariant>>(valueElement.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<ProductVariant>();
                         }
