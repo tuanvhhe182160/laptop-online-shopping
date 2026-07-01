@@ -8,7 +8,7 @@ namespace WebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "WarehouseManager")]
+    [Authorize(Roles = "Admin,WarehouseManager")]
     public class WarehouseController : ControllerBase
     {
         private readonly IWarehouseService _warehouseService;

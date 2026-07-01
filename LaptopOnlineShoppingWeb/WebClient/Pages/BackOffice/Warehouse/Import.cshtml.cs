@@ -9,7 +9,7 @@ using WebAPI.Entities;
 
 namespace WebClient.Pages.BackOffice.Warehouse
 {
-    [Authorize(Roles = "WarehouseManager")]
+    [Authorize(Roles = "Admin,WarehouseManager")]
     public class ImportModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;

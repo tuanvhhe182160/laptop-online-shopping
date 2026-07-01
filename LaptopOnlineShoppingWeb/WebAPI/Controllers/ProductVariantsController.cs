@@ -5,6 +5,7 @@ using WebAPI.DTOs;
 using WebAPI.Entities;
 using WebAPI.Repositories;
 using WebAPI.Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebAPI.Controllers
 {
@@ -22,10 +23,13 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet]
-        [EnableQuery(MaxExpansionDepth = 3)]
+        [EnableQuery(MaxExpansionDepth = 4)]
         public IActionResult GetAll()
         {
-            return Ok(_variantRepository.GetQueryable());
+            var query = _variantRepository.GetQueryable()
+                .Include(v => v.PhysicalProducts)
+                .Include(v => v.Product).ThenInclude(p => p.Category);
+            return Ok(query);
         }
 
         [HttpGet("{id}")]

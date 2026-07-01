@@ -23,6 +23,7 @@ namespace WebAPI.Controllers
 
         [HttpGet]
         [EnableQuery]
+        [AllowAnonymous]
         public IActionResult GetAll()
         {
             return Ok(_categoryRepository.GetQueryable());

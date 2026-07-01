@@ -81,6 +81,10 @@ namespace WebAPI
             modelBuilder.EntitySet<ProductVariant>("ProductVariants").EntityType.HasKey(p => p.VariantId);
             modelBuilder.EntitySet<Feedback>("Feedbacks");
             modelBuilder.EntitySet<Category>("Categories");
+            modelBuilder.EntitySet<Customer>("Customers");
+            modelBuilder.EntitySet<PhysicalProduct>("PhysicalProducts").EntityType.HasKey(p => p.PhysicalId);
+            modelBuilder.EntitySet<Branch>("Branches").EntityType.HasKey(b => b.BranchId);
+            modelBuilder.EntitySet<Order>("Orders").EntityType.HasKey(o => o.OrderId);
             var edmModel = modelBuilder.GetEdmModel();
 
             builder.Services.AddControllers()

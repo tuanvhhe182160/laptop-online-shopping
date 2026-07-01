@@ -61,10 +61,6 @@
                 @if (User.IsInRole("Admin"))
                 {
                     <li class="nav-item">
-                        <a class="nav-link @GetActive("/admin/dashboard")" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
-                    </li>
-
-                    <li class="nav-item">
                         <a class="nav-link @GetActive("/admin/users")" href="/admin/users"><i class="bi bi-people me-2"></i> Quản lý Nhân sự</a>
                     </li>
                     <li class="nav-item">
@@ -72,6 +68,16 @@
                     </li>
                 }
 
+                @if (User.IsInRole("Admin") || User.IsInRole("WarehouseManager"))
+                {
+                    <li class="nav-item">
+                        <a class="nav-link @GetActive("/Admin/PhysicalProducts")" href="/Admin/PhysicalProducts"><i class="bi bi-box-seam me-2"></i> Quản lý Tồn Kho (Seri)</a>
+                    </li>
+                }
+                
+                <li class="nav-item">
+                    <a class="nav-link @GetActive("/Admin/Categories")" href="/Admin/Categories/Index"><i class="bi bi-tags me-2"></i> Hãng sản xuất</a>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link @GetActive("/Admin/Products")" href="/Admin/Products/Index"><i class="bi bi-pc-display me-2"></i> Sản phẩm</a>
                 </li>

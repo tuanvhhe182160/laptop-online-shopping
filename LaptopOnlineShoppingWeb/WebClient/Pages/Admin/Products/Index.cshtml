@@ -378,12 +378,12 @@
 
         function loadVariants(productId) {
             // Lấy danh sách biến thể với OData filter và expand PhysicalProducts để tính tồn kho
-            fetch(`${apiBase}/api/ProductVariants?$filter=productId eq ${productId}&$expand=PhysicalProducts`, { headers: getHeaders() })
+            fetch(`${apiBase}/api/ProductVariants?$filter=ProductId eq ${productId}&$expand=PhysicalProducts`, { headers: getHeaders() })
             .then(res => res.json())
             .then(data => {
                 const tbody = document.querySelector('#variantsTable tbody');
                 tbody.innerHTML = '';
-                const variants = data || [];
+                const variants = data.value || data || [];
                 if(variants.length === 0){
                     tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">Chưa có biến thể nào.</td></tr>`;
                     return;
