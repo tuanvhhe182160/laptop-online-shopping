@@ -33,6 +33,7 @@ namespace WebAPI.Controllers
                 u.FullName,
                 u.Email,
                 u.IsActive,
+                RoleId = u.RoleId,
                 RoleName = u.Role?.RoleName,
                 BranchId = u.BranchId,
                 BranchName = u.Branch?.BranchName ?? "Toàn hệ thống" // Hiển thị cho Admin tổng
@@ -99,6 +100,29 @@ namespace WebAPI.Controllers
             };
 
             return Ok(response);
-        } 
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] UserUpdateRequest request)
+        {
+            var user = await _userRepository.GetByIdAsync(id);
+
+            if (user == null)
+                return NotFound("Không tìm thấy nhân viên.");
+
+            user.FullName = request.FullName;
+            user.Email = request.Email;
+            user.RoleId = request.RoleId;
+            user.BranchId = request.BranchId;
+            user.IsActive = request.IsActive;
+
+            await _userRepository.UpdateAsync(user);
+            await _userRepository.SaveAsync();
+
+            return Ok(new
+            {
+                message = "Cập nhật nhân viên thành công."
+            });
+        }
     }
 }

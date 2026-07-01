@@ -25,6 +25,10 @@ namespace WebClient.Pages.Admin.Users
 
         [BindProperty]
         public UserCreateViewModel NewUser { get; set; } = new();
+        [BindProperty]
+        public UserEditViewModel EditUser { get; set; } = new();
+        [BindProperty]
+        public UserFormViewModel UserForm { get; set; } = new();
 
         public async Task OnGetAsync()
         {
@@ -58,18 +62,44 @@ namespace WebClient.Pages.Admin.Users
         public async Task<IActionResult> OnPostCreateAsync()
         {
             var client = CreateAuthClient();
-            var content = new StringContent(JsonSerializer.Serialize(NewUser), Encoding.UTF8, "application/json");
+            var content = new StringContent(JsonSerializer.Serialize(UserForm), Encoding.UTF8, "application/json");
 
             var response = await client.PostAsync("api/Users", content);
 
             if (response.IsSuccessStatusCode)
             {
-                TempData["SuccessMessage"] = $"Đã cấp tài khoản [{NewUser.Username}] thành công!";
+                TempData["SuccessMessage"] = $"Đã cấp tài khoản [{UserForm.Username}] thành công!";
             }
             else
             {
                 var error = await response.Content.ReadAsStringAsync();
                 TempData["ErrorMessage"] = $"Lỗi tạo tài khoản: {error}";
+            }
+
+            return RedirectToPage();
+        }
+
+        public async Task<IActionResult> OnPostEditAsync()
+        {
+            var client = CreateAuthClient();
+
+            var content = new StringContent(
+                JsonSerializer.Serialize(UserForm),
+                Encoding.UTF8,
+                "application/json");
+
+            var response = await client.PutAsync(
+                $"api/Users/{UserForm.UserId}",
+                content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                TempData["SuccessMessage"] = $"Đã cập nhật nhân viên [{UserForm.Username}]!";
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                TempData["ErrorMessage"] = $"Lỗi cập nhật: {error}";
             }
 
             return RedirectToPage();

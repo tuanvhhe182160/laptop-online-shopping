@@ -37,8 +37,13 @@ public class ForgotPasswordModel : PageModel
         var apiUrl =
             $"{_configuration["ApiSettings:BaseUrl"]}api/auth/forgot-password";
 
+        var payload = new
+        {
+            email = Email
+        };
+
         var content = new StringContent(
-            JsonSerializer.Serialize(Email),
+            JsonSerializer.Serialize(payload),
             Encoding.UTF8,
             "application/json");
 

@@ -10,5 +10,6 @@
         public string RoleName { get; set; } = string.Empty;
         public int? BranchId { get; set; }
         public string? BranchName { get; set; }
+        public int RoleId { get; set; }
     }
 }

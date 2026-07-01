@@ -171,11 +171,13 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword([FromBody] string email)
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
+            var email = request.Email?.Trim().ToLower();
+
             if (string.IsNullOrWhiteSpace(email)) return BadRequest(new { message = "Vui lòng nhập email." });
 
-            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Email == email);
+            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Email != null && c.Email.Trim().ToLower() == email);
             if (customer == null)
                 return BadRequest(new { message = "Email không tồn tại trong hệ thống." });
 
