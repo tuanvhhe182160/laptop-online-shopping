@@ -1,0 +1,175 @@
+@page
+@model WebClient.Pages.BackOffice.Warehouse.ImportModel
+@{
+    ViewData["Title"] = "Nhập Kho Serial Number";
+    Layout = "_AdminLayout";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold text-dark m-0">Nhập Kho Hàng Loạt (Theo Serial)</h3>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <form id="importForm">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-dark">1. Chọn Cấu hình Sản phẩm (Variant) <span class="text-danger">*</span></label>
+                            <select id="variantId" class="form-select border-secondary-subtle" required>
+                                <option value="">-- Vui lòng chọn cấu hình sản phẩm --</option>
+                                @if (Model.Variants != null)
+                                {
+                                    foreach (var v in Model.Variants)
+                                    {
+                                        <option value="@v.VariantId">[@v.Product?.ProductCode] @v.Product?.ProductName - @v.Cpu / @v.Ram / @v.Ssd (@v.Color)</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-dark">2. Nhập Danh sách mã Serial <span class="text-danger">*</span></label>
+                            <div class="text-muted small mb-2">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Nhập hoặc dán danh sách mã Serial của các thiết bị thực tế. Mỗi mã cách nhau bằng <strong>dấu phẩy (,)</strong> hoặc <strong>xuống dòng (Enter)</strong>.
+                            </div>
+                            <textarea id="serialNumbers" class="form-control font-monospace border-secondary-subtle" rows="12" placeholder="VD:&#10;SN-847291001&#10;SN-847291002&#10;SN-847291003..." required></textarea>
+                        </div>
+
+                        <div class="text-end border-top pt-3 mt-4">
+                            <button type="button" class="btn btn-outline-secondary px-4 me-2" onclick="resetForm()">
+                                Làm lại
+                            </button>
+                            <button type="button" class="btn btn-success px-5 fw-bold" onclick="submitImport()">
+                                <i class="bi bi-box-arrow-in-down me-2"></i> Xác nhận Nhập Kho
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card bg-light border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-lightbulb text-warning me-2"></i> Hướng dẫn</h5>
+                    <ul class="text-muted small ps-3">
+                        <li class="mb-2">Kiểm tra kỹ mã <strong>Variant</strong> để tránh nhập nhầm cấu hình.</li>
+                        <li class="mb-2">Hệ thống sẽ tự động quét và loại bỏ các khoảng trắng thừa.</li>
+                        <li class="mb-2">Giao dịch an toàn (Transaction): Nếu phát hiện có bất kỳ mã Serial nào <strong>bị trùng lặp</strong> trong hệ thống, toàn bộ tiến trình sẽ bị chặn lại để đảm bảo tính nhất quán.</li>
+                        <li class="mb-2">Máy sau khi nhập thành công sẽ tự động ở trạng thái <strong>InStock</strong> (Còn hàng).</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let apiBase = document.body.getAttribute('data-api-base') || '';
+        let token = document.body.getAttribute('data-token') || '';
+
+        function resetForm() {
+            document.getElementById('importForm').reset();
+        }
+
+        function submitImport() {
+            var variantId = document.getElementById('variantId').value;
+            var serialText = document.getElementById('serialNumbers').value;
+
+            if (!variantId) {
+                Swal.fire('Cảnh báo', 'Vui lòng chọn cấu hình sản phẩm (Variant).', 'warning');
+                return;
+            }
+
+            if (!serialText || serialText.trim() === '') {
+                Swal.fire('Cảnh báo', 'Vui lòng nhập ít nhất một Serial Number.', 'warning');
+                return;
+            }
+
+            // Auto-parse serial numbers (split by comma or newline)
+            var rawSerials = serialText.split(/[\n,]+/);
+            var serials = [];
+            for (var i = 0; i < rawSerials.length; i++) {
+                var s = rawSerials[i].trim();
+                if (s !== '') {
+                    serials.push(s);
+                }
+            }
+
+            if (serials.length === 0) {
+                Swal.fire('Cảnh báo', 'Không tìm thấy Serial Number hợp lệ sau khi lọc.', 'warning');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Xác nhận nhập kho?',
+                html: `Bạn chuẩn bị ghi nhận <b>${serials.length}</b> thiết bị vào kho hệ thống.<br/>Bạn có chắc chắn muốn tiếp tục?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#198754',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Đồng ý, Nhập kho',
+                cancelButtonText: 'Hủy bỏ'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    processImport(variantId, serials);
+                }
+            });
+        }
+
+        function processImport(variantId, serials) {
+            // Show loading spinner
+            Swal.fire({
+                title: 'Đang xử lý...',
+                text: 'Vui lòng chờ trong giây lát',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            var payload = {
+                VariantId: parseInt(variantId),
+                SerialNumbers: serials
+            };
+
+            fetch(`${apiBase}/api/warehouse/import`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                return res.json().then(data => {
+                    if (!res.ok) {
+                        throw new Error(data.message || 'Lỗi hệ thống khi nhập kho.');
+                    }
+                    return data;
+                });
+            })
+            .then(data => {
+                Swal.fire({
+                    title: 'Nhập kho thành công!',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonText: 'Đóng'
+                });
+                resetForm(); // Clear form on success
+            })
+            .catch(err => {
+                Swal.fire({
+                    title: 'Nhập kho thất bại',
+                    text: err.message,
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545',
+                    confirmButtonText: 'Đã hiểu'
+                });
+            });
+        }
+    </script>
+}

@@ -6,12 +6,15 @@ namespace WebClient
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddTransient<WebClient.Handlers.AuthHeaderHandler>();
+
             // Add HttpClient for making API calls
             builder.Services.AddHttpClient("WebAPI", client =>
             {
                 client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"]!);
                 client.DefaultRequestHeaders.Add("Accept", "application/json");
-            });
+            }).AddHttpMessageHandler<WebClient.Handlers.AuthHeaderHandler>();
 
             //Authentication
             builder.Services.AddAuthentication("MyCookieAuth")

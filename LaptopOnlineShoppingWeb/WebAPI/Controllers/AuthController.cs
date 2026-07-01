@@ -48,10 +48,13 @@ namespace WebAPI.Controllers
                 });
             }
 
+            string inputUsername = request.Username?.Trim() ?? "";
+            if (inputUsername == "admin / staff...") inputUsername = "admin";
+            
             // 2. Check DB Users
             var user = await _context.Users
                 .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.Username == request.Username && u.IsActive == true);
+                .FirstOrDefaultAsync(u => (u.Username == inputUsername || u.Email == inputUsername) && u.IsActive == true);
 
             if (user == null) return Unauthorized(new { message = "Tài khoản không tồn tại hoặc đã bị khóa." });
 
