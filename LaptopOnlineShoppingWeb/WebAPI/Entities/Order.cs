@@ -1,4 +1,6 @@
-﻿namespace WebAPI.Entities;
+﻿using System.Text.Json.Serialization;
+
+namespace WebAPI.Entities;
 
 public partial class Order
 {
@@ -21,8 +23,6 @@ public partial class Order
     public virtual Branch? Branch { get; set; }
 
     public virtual Customer Customer { get; set; } = null!;
-
-    public int? BranchId { get; set; }
 
     [JsonIgnore]
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();

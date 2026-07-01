@@ -18,9 +18,13 @@ public partial class ProductVariant
     [Range(0.01, double.MaxValue, ErrorMessage = "Giá tiền phải lớn hơn 0")]
     public decimal Price { get; set; }
 
-    [JsonIgnore]
-    public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
+    [JsonIgnore] public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
 
-    [JsonIgnore]
-    public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+    [JsonIgnore] public virtual ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
+
+    [JsonIgnore] public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+
+    [JsonIgnore] public virtual ICollection<PhysicalProduct> PhysicalProducts { get; set; } = new List<PhysicalProduct>();
+
+    [JsonIgnore] public virtual Product Product { get; set; } = null!;
 }

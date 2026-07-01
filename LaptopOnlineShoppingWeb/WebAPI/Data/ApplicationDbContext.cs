@@ -34,11 +34,7 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<OrderDetail> OrderDetails { get; set; }
 
-    public virtual DbSet<PhysicalProduct> PhysicalProducts { get; set; }
-
     public virtual DbSet<Product> Products { get; set; }
-
-    public virtual DbSet<ProductVariant> ProductVariants { get; set; }
 
     public virtual DbSet<Role> Roles { get; set; }
 
@@ -93,7 +89,7 @@ public partial class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__CartItems__CartI__6D0D32F4");
 
-            entity.HasOne(d => dc.ProductVariant).WithMany(p => p.CartItems)
+            entity.HasOne(d => d.ProductVariant).WithMany(p => p.CartItems)
                 .HasForeignKey(d => d.VariantId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__CartItems__Varia__6E01572D");
@@ -139,20 +135,18 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.VariantId).HasName("PK__Laptops__19F026843BB41F92");
 
-            entity.HasIndex(e => ec.ProductVariantCode, "UQ__Laptops__77FFE85DC40CBF34").IsUnique();
-
-            entity.Property(e => e.CreatedDate)
+            entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
-            entity.Property(e => ec.ProductVariantCode)
-                .HasMaxLength(20)
-                .IsUnicode(false);
-            entity.Property(e => ec.ProductVariantName).HasMaxLength(150);
-            entity.Property(e => e.Price).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.Status).HasDefaultValue(true);
+            entity.Property(e => e.IsHidden).HasDefaultValue(false);
 
-            entity.HasOne(d => d.Category).WithMany(p => pc.ProductVariants)
-                .HasForeignKey(d => d.CategoryId)
+            entity.HasOne(d => d.Customer).WithMany(p => p.Feedbacks)
+                .HasForeignKey(d => d.CustomerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Feedbacks__Custo__73BA3083");
+
+            entity.HasOne(d => d.Variant).WithMany(p => p.Feedbacks)
+                .HasForeignKey(d => d.VariantId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Feedbacks__Varia__74AE54BC");
         });
@@ -188,7 +182,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.Property(e => e.UnitPrice).HasColumnType("decimal(18, 2)");
 
-            entity.HasOne(d => dc.ProductVariant).WithMany(p => p.OrderDetails)
+            entity.HasOne(d => d.ProductVariant).WithMany(p => p.OrderDetails)
                 .HasForeignKey(d => d.VariantId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__OrderDeta__Varia__5DCAEF64");
@@ -214,7 +208,7 @@ public partial class ApplicationDbContext : DbContext
                 .HasForeignKey(d => d.OrderId)
                 .HasConstraintName("FK__PhysicalP__Order__6477ECF3");
 
-            entity.HasOne(d => d.Variant).WithMany(p => p.PhysicalProducts)
+            entity.HasOne(d => d.ProductVariant).WithMany(p => p.PhysicalProducts)
                 .HasForeignKey(d => d.VariantId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__PhysicalP__Varia__628FA481");
@@ -246,14 +240,14 @@ public partial class ApplicationDbContext : DbContext
             entity.HasKey(e => e.VariantId).HasName("PK__ProductV__0EA233844E485A34");
 
             entity.Property(e => e.Color).HasMaxLength(50);
-            entity.Property(e => e.Cpu)
+            entity.Property(e => e.CPU)
                 .HasMaxLength(100)
                 .HasColumnName("CPU");
             entity.Property(e => e.Price).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.Ram)
+            entity.Property(e => e.RAM)
                 .HasMaxLength(50)
                 .HasColumnName("RAM");
-            entity.Property(e => e.Ssd)
+            entity.Property(e => e.SSD)
                 .HasMaxLength(50)
                 .HasColumnName("SSD");
 

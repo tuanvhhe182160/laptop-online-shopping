@@ -45,8 +45,8 @@ namespace WebAPI.Services
                 Items = cart.CartItems.Select(ci => new CartItemResponseDTO
                 {
                     VariantId = ci.VariantId,
-                    LaptopName = cic.ProductVariantc.ProductVariantName,
-                    UnitPrice = cic.ProductVariant.Price,
+                    LaptopName = ci.ProductVariant.ProductVariantName,
+                    UnitPrice = ci.ProductVariant.Price,
                     Quantity = ci.Quantity
                 }).ToList()
             };

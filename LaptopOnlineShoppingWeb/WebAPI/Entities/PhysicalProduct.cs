@@ -21,5 +21,6 @@ public partial class PhysicalProduct
 
     // Navigation properties (Tùy chọn, thêm JsonIgnore nếu cần)
     public virtual ProductVariant? ProductVariant { get; set; }
+    public virtual Branch Branch { get; set; } = null!;
     public virtual Order? Order { get; set; }
 }
