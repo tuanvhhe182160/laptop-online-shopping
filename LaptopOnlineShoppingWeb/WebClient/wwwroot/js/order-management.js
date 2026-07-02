@@ -1,5 +1,5 @@
-const API_BASE = "https://localhost:7196/api";
-
+const API_BASE = document.body.getAttribute('data-api-base') || 'https://localhost:7136';
+const TOKEN = document.body.getAttribute('data-token');
 async function updateOrderStatus(orderId, currentStatus) {
     const newStatus = prompt(`Cập nhật trạng thái cho Đơn hàng #${orderId}.\nTrạng thái hiện tại: ${currentStatus}\nNhập trạng thái mới (Pending, Processing, Shipped, Cancelled, Completed):`, currentStatus);
     
@@ -17,10 +17,13 @@ async function updateOrderStatus(orderId, currentStatus) {
         paymentStatus: paymentStatus
     };
 
+    const headers = { 'Content-Type': 'application/json' };
+    if (TOKEN) headers['Authorization'] = `Bearer ${TOKEN}`;
+
     try {
-        const response = await fetch(`${API_BASE}/orders/${orderId}/status`, {
+        const response = await fetch(`${API_BASE}/api/orders/${orderId}/status`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: headers,
             body: JSON.stringify(payload)
         });
 

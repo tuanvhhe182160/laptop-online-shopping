@@ -36,7 +36,7 @@ namespace WebAPI
             builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 
             //Add services
-            //builder.Services.AddScoped<ICustomerService, CustomerService>();
+            builder.Services.AddScoped<ICustomerService, CustomerService>();
             builder.Services.AddScoped<ICartService, CartService>();
             builder.Services.AddScoped<IOrderService, OrderService>();
             builder.Services.AddScoped<IEmailService, EmailService>();
