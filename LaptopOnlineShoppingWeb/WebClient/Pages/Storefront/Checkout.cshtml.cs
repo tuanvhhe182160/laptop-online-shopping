@@ -45,8 +45,10 @@ namespace WebClient.Pages.Storefront
                 if (response.IsSuccessStatusCode)
                 {
                     using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
-                    var items = doc.RootElement.GetProperty("value");
-                    if (items.GetArrayLength() > 0)
+                    var laptopName = doc.RootElement.GetProperty("product").GetProperty("productName").GetString();
+                    var price = doc.RootElement.GetProperty("price").GetDecimal();
+
+                    DirectPurchaseItem = new OrderDetailViewModel
                     {
                         var variant = items[0];
                         var product = variant.GetProperty("Product");
