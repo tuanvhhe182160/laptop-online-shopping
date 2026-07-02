@@ -91,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     showConfirmButton: false
                 }).then(() => {
                     // Chuyển hướng về trang lịch sử mua hàng
-                    window.location.href = "/Storefront/OrderHistory";
+                    window.location.href = "/Storefront/order-history";
                 });
             } else {
                 // Đọc lỗi trả về từ Backend (Ví dụ lỗi: Hết hàng, tranh chấp kho)
