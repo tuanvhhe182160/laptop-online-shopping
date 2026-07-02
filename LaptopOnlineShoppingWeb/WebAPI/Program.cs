@@ -30,15 +30,15 @@ namespace WebAPI
             builder.Services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
             builder.Services.AddScoped<IPhysicalProductRepository, PhysicalProductRepository>();
             builder.Services.AddScoped<IFeedbackRepository, FeedbackRepository>();
-            //builder.Services.AddScoped<ICartRepository, CartRepository>();
-            //builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+            builder.Services.AddScoped<ICartRepository, CartRepository>();
+            builder.Services.AddScoped<IOrderRepository, OrderRepository>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 
             //Add services
-            //builder.Services.AddScoped<ICustomerService, CustomerService>();
-            //builder.Services.AddScoped<ICartService, CartService>();
-            //builder.Services.AddScoped<IOrderService, OrderService>();
+            builder.Services.AddScoped<ICustomerService, CustomerService>();
+            builder.Services.AddScoped<ICartService, CartService>();
+            builder.Services.AddScoped<IOrderService, OrderService>();
             builder.Services.AddScoped<IEmailService, EmailService>();
             builder.Services.AddScoped<IProductService, ProductService>();
             builder.Services.AddScoped<IWarehouseService, WarehouseService>();

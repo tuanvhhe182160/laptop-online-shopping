@@ -27,8 +27,8 @@ namespace WebAPI.Controllers
             }
 
             // Trích xuất BranchId từ Claim JWT
-            var branchIdClaim = User.FindFirst("BranchId")?.Value;
-            if (string.IsNullOrEmpty(branchIdClaim) || !int.TryParse(branchIdClaim, out int branchId) || branchId <= 0)
+            var branchIdClaim = User.FindFirst("BranchId")?.Value ?? "0";
+            if (string.IsNullOrEmpty(branchIdClaim) || !int.TryParse(branchIdClaim, out int branchId) || branchId < 0)
             {
                 return BadRequest(new { message = "Bạn không có quyền nhập kho do không thuộc chi nhánh hợp lệ." });
             }

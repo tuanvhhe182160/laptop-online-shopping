@@ -1,11 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
+using Microsoft.EntityFrameworkCore;
 using WebAPI.DTOs;
-using WebAPI.Entities;
 using WebAPI.Repositories;
 using WebAPI.Services;
-using Microsoft.EntityFrameworkCore;
 
 namespace WebAPI.Controllers
 {
@@ -36,8 +35,17 @@ namespace WebAPI.Controllers
         [EnableQuery(MaxExpansionDepth = 3)]
         public async Task<IActionResult> GetById(int id)
         {
-            var variant = await _variantRepository.GetByIdAsync(id);
-            if (variant == null) return NotFound(new { message = "Không tìm thấy biến thể." });
+            //var variant = await _variantRepository.GetByIdAsync(id);
+            //if (variant == null) return NotFound(new { message = "Không tìm thấy biến thể." });
+            //return Ok(variant);
+            var variant = await _variantRepository.GetQueryable()
+                .Include(v => v.Product)
+                .Include(v => v.PhysicalProducts)
+                .FirstOrDefaultAsync(v => v.VariantId == id);
+
+            if (variant == null)
+                return NotFound(new { message = "Không tìm thấy biến thể." });
+
             return Ok(variant);
         }
 
