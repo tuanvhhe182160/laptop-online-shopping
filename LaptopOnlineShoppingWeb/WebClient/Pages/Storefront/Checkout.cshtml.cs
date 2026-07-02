@@ -2,8 +2,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Headers;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Security.Claims;
 using System.Text.Json;
+using WebAPI.Entities;
 using WebClient.Models;
 
 namespace WebClient.Pages.Storefront
@@ -44,31 +47,19 @@ namespace WebClient.Pages.Storefront
                 var response = await client.GetAsync($"/odata/ProductVariants?$filter=VariantId eq {VariantId}&$expand=Product");
                 if (response.IsSuccessStatusCode)
                 {
+                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                     using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
                     var laptopName = doc.RootElement.GetProperty("product").GetProperty("productName").GetString();
                     var price = doc.RootElement.GetProperty("price").GetDecimal();
 
                     DirectPurchaseItem = new OrderDetailViewModel
                     {
-                        var variant = items[0];
-                        var product = variant.GetProperty("Product");
-                        var productName = product.GetProperty("ProductName").GetString();
-                        var price = variant.GetProperty("Price").GetDecimal();
-                        var cpu = variant.GetProperty("CPU").GetString();
-                        var ram = variant.GetProperty("RAM").GetString();
-                        var ssd = variant.GetProperty("SSD").GetString();
-
-                        var laptopName = $"{productName} ({cpu} - {ram} - {ssd})";
-
-                        DirectPurchaseItem = new OrderDetailViewModel
-                        {
-                            VariantId = VariantId,
-                            LaptopName = laptopName,
-                            UnitPrice = price,
-                            Quantity = Quantity,
-                            TotalPrice = price * Quantity
-                        };
-                    }
+                        VariantId = VariantId,
+                        LaptopName = laptopName,
+                        UnitPrice = price,
+                        Quantity = Quantity,
+                        TotalPrice = price * Quantity
+                    };
                 }
             }
             else
