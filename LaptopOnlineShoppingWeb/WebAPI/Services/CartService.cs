@@ -2,6 +2,7 @@ using WebAPI.Data;
 using WebAPI.DTOs;
 using WebAPI.Entities;
 using WebAPI.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebAPI.Services
 {
@@ -18,11 +19,13 @@ namespace WebAPI.Services
     {
         private readonly ICartRepository _cartRepository;
         private readonly IGenericRepository<ProductVariant> _variantRepository;
+        private readonly ApplicationDbContext _context;
 
-        public CartService(ICartRepository cartRepository, IGenericRepository<ProductVariant> variantRepository)
+        public CartService(ICartRepository cartRepository, IGenericRepository<ProductVariant> variantRepository, ApplicationDbContext context)
         {
             _cartRepository = cartRepository;
             _variantRepository = variantRepository;
+            _context = context;
         }
 
         public async Task<CartResponseDTO?> GetCartAsync(int customerId)
@@ -81,11 +84,14 @@ namespace WebAPI.Services
                 newQuantity += existingItem.Quantity;
             }
 
-            // TODO: Bổ sung logic check Stock dựa vào số lượng PhysicalProduct InStock
-            // if (newQuantity > variant.StockQuantity)
-            // {
-            //     return false; // Vượt quá tồn kho
-            // }
+            // Check Stock dựa vào số lượng PhysicalProduct InStock
+            var inStockCount = await _context.PhysicalProducts
+                .CountAsync(p => p.VariantId == dto.VariantId && p.Status == "InStock");
+            
+            if (newQuantity > inStockCount)
+            {
+                return false; // Vượt quá tồn kho
+            }
 
             if (existingItem != null)
             {

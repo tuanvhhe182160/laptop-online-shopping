@@ -41,22 +41,32 @@ namespace WebClient.Pages.Storefront
 
             if (IsBuyNow && VariantId > 0 && Quantity > 0)
             {
-                var response = await client.GetAsync($"/api/laptops/{VariantId}");
+                var response = await client.GetAsync($"/odata/ProductVariants?$filter=VariantId eq {VariantId}&$expand=Product");
                 if (response.IsSuccessStatusCode)
                 {
-                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                     using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
-                    var laptopName = doc.RootElement.GetProperty("laptopName").GetString();
-                    var price = doc.RootElement.GetProperty("price").GetDecimal();
-
-                    DirectPurchaseItem = new OrderDetailViewModel
+                    var items = doc.RootElement.GetProperty("value");
+                    if (items.GetArrayLength() > 0)
                     {
-                        VariantId = VariantId,
-                        LaptopName = laptopName ?? "Laptop",
-                        UnitPrice = price,
-                        Quantity = Quantity,
-                        TotalPrice = price * Quantity
-                    };
+                        var variant = items[0];
+                        var product = variant.GetProperty("Product");
+                        var productName = product.GetProperty("ProductName").GetString();
+                        var price = variant.GetProperty("Price").GetDecimal();
+                        var cpu = variant.GetProperty("CPU").GetString();
+                        var ram = variant.GetProperty("RAM").GetString();
+                        var ssd = variant.GetProperty("SSD").GetString();
+
+                        var laptopName = $"{productName} ({cpu} - {ram} - {ssd})";
+
+                        DirectPurchaseItem = new OrderDetailViewModel
+                        {
+                            VariantId = VariantId,
+                            LaptopName = laptopName,
+                            UnitPrice = price,
+                            Quantity = Quantity,
+                            TotalPrice = price * Quantity
+                        };
+                    }
                 }
             }
             else

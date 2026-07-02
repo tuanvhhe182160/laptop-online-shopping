@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ using WebClient.Models;
 
 namespace WebClient.Pages.BackOffice.Orders
 {
+    [Authorize(Roles = "Admin,Staff")]
     public class IndexModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;
@@ -22,6 +24,13 @@ namespace WebClient.Pages.BackOffice.Orders
         public async Task<IActionResult> OnGetAsync()
         {
             var client = _httpClientFactory.CreateClient("WebAPI");
+
+            var token = User.FindFirst("AccessToken")?.Value;
+            if (!string.IsNullOrEmpty(token))
+            {
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            }
+
             var response = await client.GetAsync("/api/orders");
 
             if (response.IsSuccessStatusCode)
