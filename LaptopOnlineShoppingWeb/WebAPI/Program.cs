@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OData.ModelBuilder;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using WebAPI.Data;
 using WebAPI.Entities;
 using WebAPI.Repositories;
@@ -42,13 +43,18 @@ namespace WebAPI
             // Add rate limiting
             builder.Services.AddRateLimiter(options =>
             {
-                options.AddFixedWindowLimiter(
-                    "ai",
-                    opt =>
-                    {
-                        opt.Window = TimeSpan.FromMinutes(1);
-                        opt.PermitLimit = 5;
-                    });
+                options.AddPolicy("ai", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        // Limits per IP address
+                        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            Window = TimeSpan.FromMinutes(1),
+                            PermitLimit = 15,
+                            QueueLimit = 3,    // Allow 3 extra requests to queue up instead of failing instantly
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+                        }
+                    ));
             });
 
             //Add services
@@ -60,6 +66,7 @@ namespace WebAPI
             builder.Services.AddScoped<IWarehouseService, WarehouseService>();
             builder.Services.AddScoped<IFeedbackService, FeedbackService>();
             builder.Services.AddScoped<LlmService>();
+            builder.Services.AddSingleton<PromptSecurityService>();
 
             //Add singleton pattern
             builder.Services.AddSingleton<SystemConfigService>();
@@ -142,6 +149,7 @@ namespace WebAPI
             app.UseRouting();
 
             app.UseCors("AllowClient");
+            app.UseRateLimiter();
 
             app.UseAuthentication();
             app.UseAuthorization();

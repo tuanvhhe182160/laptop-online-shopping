@@ -1,16 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
-using Microsoft.EntityFrameworkCore;
 using WebAPI.DTOs;
-using WebAPI.Repositories;
 using WebAPI.Services;
 
 namespace WebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin,Staff")]
     public class CustomersController : ControllerBase
     {
         private readonly ICustomerService _service;
@@ -22,6 +19,7 @@ namespace WebAPI.Controllers
 
         [HttpGet]
         [EnableQuery]
+        [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> Get()
         {
             var customers = await _service.GetAllCustomersAsync();
@@ -29,6 +27,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> GetById(int id)
         {
             var customer = await _service.GetCustomerByIdAsync(id);
@@ -37,6 +36,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> Post([FromBody] CustomerCreateDTO dto)
         {
             var customer = await _service.CreateCustomerAsync(dto);
@@ -44,6 +44,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> Put(int id, [FromBody] CustomerUpdateDTO dto)
         {
             var result = await _service.UpdateCustomerAsync(id, dto);
@@ -52,6 +53,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _service.DeleteCustomerAsync(id);

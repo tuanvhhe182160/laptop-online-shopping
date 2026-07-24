@@ -118,7 +118,7 @@ Hãy phân tích dữ liệu trên và chọn laptop phù hợp.
 
             try
             {
-                if(_promptSecurityService.ContainsInjection(systemPrompt) || _promptSecurityService.ContainsInjection(userPrompt))
+                if(_promptSecurityService.ContainsInjection(userPrompt))
                 {
                     return BadRequest(new { message = "Nội dung yêu cầu không hợp lệ hoặc có dấu hiệu nguy hiểm." });
                 }

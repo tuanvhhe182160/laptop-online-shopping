@@ -73,6 +73,11 @@ namespace WebAPI.Services
                 if (cart == null || !cart.CartItems.Any())
                     throw new Exception("Giỏ hàng của bạn đang trống.");
 
+                int? selectedBranchId = await FindSuitableBranchForCartAsync(cart.CartItems);
+
+                if (selectedBranchId == null)
+                    throw new Exception("Hiện tại không có chi nhánh nào đáp ứng đủ toàn bộ đơn hàng của bạn.");
+
                 decimal totalAmount = cart.CartItems.Sum(ci => ci.Quantity * ci.ProductVariant.Price);
 
                 var order = new Order
@@ -83,7 +88,7 @@ namespace WebAPI.Services
                     PaymentMethod = dto.PaymentMethod,
                     PaymentStatus = false,
                     OrderStatus = "Pending",
-                    BranchId = null
+                    BranchId = selectedBranchId
                 };
 
                 _context.Orders.Add(order);
@@ -104,10 +109,10 @@ namespace WebAPI.Services
                     string sql = @"
                         UPDATE TOP (@p0) PhysicalProducts
                         SET Status = 'Reserved', OrderId = @p1
-                        WHERE VariantId = @p2 AND Status = 'InStock'";
+                        WHERE VariantId = @p2 AND BranchId = @p3 AND Status = 'InStock'";
 
                     int rowsAffected = await _context.Database.ExecuteSqlRawAsync(
-                        sql, item.Quantity, order.OrderId, item.VariantId);
+                        sql, item.Quantity, order.OrderId, item.VariantId, selectedBranchId);
 
                     if (rowsAffected < item.Quantity)
                         throw new Exception($"Sản phẩm (Mã loại: {item.VariantId}) chỉ còn {rowsAffected} máy. Vui lòng giảm số lượng.");
@@ -134,6 +139,17 @@ namespace WebAPI.Services
                 var variant = await _context.ProductVariants.FindAsync(dto.VariantId);
                 if (variant == null) throw new Exception("Sản phẩm không tồn tại.");
 
+                int? selectedBranchId = await _context.PhysicalProducts
+                    .Where(p => p.VariantId == dto.VariantId && p.Status == "InStock")
+                    .GroupBy(p => p.BranchId)
+                    .Where(g => g.Count() >= dto.Quantity)
+                    .OrderByDescending(g => g.Count()) // Ưu tiên chi nhánh còn nhiều hàng nhất
+                    .Select(g => (int?)g.Key)
+                    .FirstOrDefaultAsync();
+
+                if (selectedBranchId == null)
+                    throw new Exception($"Không có chi nhánh nào còn đủ {dto.Quantity} máy trong kho.");
+
                 var order = new Order
                 {
                     CustomerId = customerId,
@@ -141,7 +157,8 @@ namespace WebAPI.Services
                     TotalAmount = variant.Price * dto.Quantity,
                     PaymentMethod = dto.PaymentMethod,
                     PaymentStatus = false,
-                    OrderStatus = "Pending"
+                    OrderStatus = "Pending",
+                    BranchId = selectedBranchId
                 };
 
                 _context.Orders.Add(order);
@@ -159,10 +176,10 @@ namespace WebAPI.Services
                 string sql = @"
                     UPDATE TOP (@p0) PhysicalProducts
                     SET Status = 'Reserved', OrderId = @p1
-                    WHERE VariantId = @p2 AND Status = 'InStock'";
+                    WHERE VariantId = @p2 AND BranchId = @p3 AND Status = 'InStock'";
 
                 int rowsAffected = await _context.Database.ExecuteSqlRawAsync(
-                    sql, dto.Quantity, order.OrderId, dto.VariantId);
+                    sql, dto.Quantity, order.OrderId, dto.VariantId, selectedBranchId);
 
                 if (rowsAffected < dto.Quantity)
                     throw new Exception($"Sản phẩm này chỉ còn {rowsAffected} máy trong kho.");
@@ -177,6 +194,35 @@ namespace WebAPI.Services
                 await transaction.RollbackAsync();
                 throw;
             }
+        }
+
+        // ==========================================
+        // HELPER METHOD: TÌM CHI NHÁNH CHUẨN CHO GIỎ HÀNG
+        // ==========================================
+        private async Task<int?> FindSuitableBranchForCartAsync(IEnumerable<CartItem> cartItems)
+        {
+            var variantIds = cartItems.Select(ci => ci.VariantId).ToList();
+
+            // Tìm tất cả chi nhánh có chứa các Variant này và đang InStock
+            var stockInBranches = await _context.PhysicalProducts
+                .Where(p => variantIds.Contains(p.VariantId) && p.Status == "InStock")
+                .GroupBy(p => new { p.BranchId, p.VariantId })
+                .Select(g => new
+                {
+                    BranchId = g.Key.BranchId,
+                    VariantId = g.Key.VariantId,
+                    AvailableStock = g.Count()
+                })
+                .ToListAsync();
+
+            // Lọc ra Branch nào thỏa mãn ĐỦ số lượng cho TẤT CẢ item trong giỏ
+            var validBranches = stockInBranches
+                .GroupBy(b => b.BranchId)
+                .Where(g => cartItems.All(ci =>
+                    g.Any(item => item.VariantId == ci.VariantId && item.AvailableStock >= ci.Quantity)))
+                .Select(g => g.Key);
+
+            return validBranches.FirstOrDefault(); // Trả về BranchId đầu tiên hợp lệ
         }
     }
 }

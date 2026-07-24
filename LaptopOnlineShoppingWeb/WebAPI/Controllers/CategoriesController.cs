@@ -9,7 +9,6 @@ namespace WebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin,Staff")]
     public class CategoriesController : ControllerBase
     {
         private readonly IGenericRepository<Category> _categoryRepository;
@@ -30,6 +29,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "Admin,Staff")]
         public async Task<ActionResult<Category>> GetById(int id)
         {
             var category = await _categoryRepository.GetByIdAsync(id);
@@ -38,6 +38,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> Create([FromBody] CategoryRequestDTO request)
         {
             var existing = await _categoryRepository.FindAsync(c => c.CategoryName == request.CategoryName);
@@ -56,6 +57,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> Update(int id, [FromBody] CategoryRequestDTO request)
         {
             var category = await _categoryRepository.GetByIdAsync(id);
