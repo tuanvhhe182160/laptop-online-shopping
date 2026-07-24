@@ -1,6 +1,7 @@
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OData;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OData.ModelBuilder;
@@ -35,6 +36,21 @@ namespace WebAPI
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 
+            // Add HttpClient for making HTTP requests
+            builder.Services.AddHttpClient();
+
+            // Add rate limiting
+            builder.Services.AddRateLimiter(options =>
+            {
+                options.AddFixedWindowLimiter(
+                    "ai",
+                    opt =>
+                    {
+                        opt.Window = TimeSpan.FromMinutes(1);
+                        opt.PermitLimit = 5;
+                    });
+            });
+
             //Add services
             builder.Services.AddScoped<ICustomerService, CustomerService>();
             builder.Services.AddScoped<ICartService, CartService>();
@@ -43,6 +59,7 @@ namespace WebAPI
             builder.Services.AddScoped<IProductService, ProductService>();
             builder.Services.AddScoped<IWarehouseService, WarehouseService>();
             builder.Services.AddScoped<IFeedbackService, FeedbackService>();
+            builder.Services.AddScoped<LlmService>();
 
             //Add singleton pattern
             builder.Services.AddSingleton<SystemConfigService>();
