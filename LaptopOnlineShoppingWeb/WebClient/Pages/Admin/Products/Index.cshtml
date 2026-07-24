@@ -204,18 +204,70 @@
     </div>
 </div>
 
+<!-- Upload Image Modal -->
+<div class="modal fade" id="uploadImageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title fw-bold">Cập nhật Ảnh Sản phẩm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <form id="uploadImageForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="upload_pcode" name="productCode" />
+                    <div class="mb-3 text-center">
+                        <img id="upload_preview" src="" class="img-fluid rounded mb-3 shadow-sm" style="max-height: 200px;" onerror="this.src='https://fakeimg.pl/400x300/e9ecef/6c757d?text=No+Image'"/>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Vị trí ảnh</label>
+                        <select class="form-select" id="upload_imageIndex" name="imageIndex" onchange="changeImagePreview()">
+                            <option value="0">Ảnh chính (Đại diện)</option>
+                            <option value="1">Ảnh phụ 1</option>
+                            <option value="2">Ảnh phụ 2</option>
+                            <option value="3">Ảnh phụ 3</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Chọn file ảnh (.jpg, .png)</label>
+                        <input type="file" id="upload_file" name="imageFile" class="form-control" accept="image/png, image/jpeg" required onchange="previewImage(event)" />
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top-0 bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-success px-4" onclick="submitUploadImage()">Tải lên</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
+    <script src="https://cdn.ckeditor.com/ckeditor5/40.0.0/classic/ckeditor.js"></script>
     <script>
         let apiBase = document.body.getAttribute('data-api-base') || '';
         let token = document.body.getAttribute('data-token') || '';
         
-        let pModal, vModal, vfModal;
+        let pModal, vModal, vfModal, uploadModal;
+        let editorInstance;
         
         document.addEventListener("DOMContentLoaded", () => {
             pModal = new bootstrap.Modal(document.getElementById('productModal'));
             vModal = new bootstrap.Modal(document.getElementById('variantsModal'));
             vfModal = new bootstrap.Modal(document.getElementById('variantFormModal'));
+            uploadModal = new bootstrap.Modal(document.getElementById('uploadImageModal'));
             loadProducts();
+
+            if (typeof ClassicEditor !== 'undefined') {
+                ClassicEditor
+                    .create(document.querySelector('#p_description'))
+                    .then(editor => {
+                        editorInstance = editor;
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            }
         });
 
         const getHeaders = () => ({
@@ -270,14 +322,17 @@
                             <td>${p.category?.categoryName || ''}</td>
                             <td>${statusBadge}</td>
                             <td class="text-end pe-4">
-                                <button class="btn btn-sm btn-outline-info me-1" onclick="openVariants(${p.productId}, '${p.productName}')">
-                                    <i class="bi bi-list-check"></i> Biến thể
+                                <button class="btn btn-sm btn-outline-success me-1" onclick="openUploadModal('${p.productCode}')" title="Đổi ảnh">
+                                    <i class="bi bi-image"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-primary me-1" onclick='editProduct(${JSON.stringify(p)})'>
-                                    <i class="bi bi-pencil-square"></i> Sửa
+                                <button class="btn btn-sm btn-outline-info me-1" onclick="openVariants(${p.productId}, '${p.productName}')" title="Biến thể">
+                                    <i class="bi bi-list-check"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(${p.productId})">
-                                    <i class="bi bi-trash"></i> Xóa
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick='editProduct(${JSON.stringify(p)})' title="Sửa">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(${p.productId})" title="Xóa">
+                                    <i class="bi bi-trash"></i>
                                 </button>
                             </td>
                         </tr>
@@ -290,6 +345,7 @@
         function openProductModal() {
             document.getElementById('productForm').reset();
             document.getElementById('p_id').value = 0;
+            if (editorInstance) editorInstance.setData("");
             document.getElementById('productModalTitle').innerText = "Thêm Sản phẩm Mới";
             pModal.show();
         }
@@ -301,6 +357,7 @@
             document.getElementById('p_categoryId').value = p.categoryId;
             document.getElementById('p_status').value = p.status ? "true" : "false";
             document.getElementById('p_description').value = p.description || "";
+            if (editorInstance) editorInstance.setData(p.description || "");
             document.getElementById('productModalTitle').innerText = "Chỉnh sửa Sản phẩm";
             pModal.show();
         }
@@ -318,7 +375,7 @@
                 productName: document.getElementById('p_name').value,
                 categoryId: parseInt(document.getElementById('p_categoryId').value),
                 status: document.getElementById('p_status').value === "true",
-                description: document.getElementById('p_description').value
+                description: editorInstance ? editorInstance.getData() : document.getElementById('p_description').value
             };
 
             const url = id == 0 ? `${apiBase}/api/Products` : `${apiBase}/api/Products/${id}`;
@@ -368,6 +425,70 @@
             })
         }
 
+        // ================= UPLOAD IMAGE LOGIC =================
+        function openUploadModal(productCode) {
+            document.getElementById('uploadImageForm').reset();
+            document.getElementById('upload_pcode').value = productCode;
+            changeImagePreview();
+            uploadModal.show();
+        }
+
+        function changeImagePreview() {
+            const productCode = document.getElementById('upload_pcode').value;
+            const idx = document.getElementById('upload_imageIndex') ? document.getElementById('upload_imageIndex').value : 0;
+            let suffix = idx == 0 ? '' : `-${idx}`;
+            document.getElementById('upload_preview').src = `/images/products/${productCode}${suffix}.jpg?t=${new Date().getTime()}`;
+        }
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                document.getElementById('upload_preview').src = URL.createObjectURL(file);
+            }
+        }
+
+        function submitUploadImage() {
+            const form = document.getElementById('uploadImageForm');
+            if(!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('imageFile', document.getElementById('upload_file').files[0]);
+            formData.append('productCode', document.getElementById('upload_pcode').value);
+            formData.append('imageIndex', document.getElementById('upload_imageIndex') ? document.getElementById('upload_imageIndex').value : 0);
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            formData.append('__RequestVerificationToken', token);
+            
+            fetch('?handler=UploadImage', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    alert('Cập nhật ảnh thành công!');
+                    uploadModal.hide();
+                    
+                    // Automatically update the image in the table without reloading the page
+                    // This prevents Visual Studio Browser Link from crashing when wwwroot changes
+                    const pcode = document.getElementById('upload_pcode').value;
+                    const idx = document.getElementById('upload_imageIndex') ? document.getElementById('upload_imageIndex').value : 0;
+                    if(idx == 0) {
+                        const img = document.querySelector(`img[alt='${pcode}']`);
+                        if(img) {
+                            img.src = `/images/products/${pcode}.jpg?t=${new Date().getTime()}`;
+                        }
+                    }
+                } else {
+                    alert(data.message || 'Có lỗi xảy ra.');
+                }
+            })
+            .catch(err => alert('Lỗi: ' + err));
+        }
+
         // ================= VARIANT LOGIC =================
         function openVariants(productId, productName) {
             document.getElementById('currentProductIdForVariants').value = productId;
@@ -389,26 +510,51 @@
                     return;
                 }
                 variants.forEach(v => {
-                    let inStockCount = v.physicalProducts ? v.physicalProducts.filter(p => p.status === 'InStock').length : 0;
+                    let cpu = v.cpu || v.CPU || '';
+                    let ram = v.ram || v.RAM || '';
+                    let ssd = v.ssd || v.SSD || '';
+                    let color = v.color || v.Color || '';
+                    let price = v.price !== undefined ? v.price : (v.Price || 0);
+                    let variantId = v.variantId || v.VariantId;
+                    let productId = v.productId || v.ProductId;
+                    let phys = v.physicalProducts || v.PhysicalProducts || [];
+                    
+                    let inStockCount = phys.filter(p => (p.status || p.Status) === 'InStock').length;
+                    
+                    let normV = {
+                        variantId: variantId,
+                        productId: productId,
+                        cpu: cpu,
+                        ram: ram,
+                        ssd: ssd,
+                        color: color,
+                        price: price
+                    };
+
                     tbody.innerHTML += `
                         <tr>
-                            <td class="ps-4 fw-bold">${v.cpu || ''}</td>
-                            <td>${v.ram || ''}</td>
-                            <td>${v.ssd || ''}</td>
-                            <td>${v.color || ''}</td>
-                            <td class="text-danger fw-bold">${v.price.toLocaleString('vi-VN')} đ</td>
+                            <td class="ps-4 fw-bold">${cpu}</td>
+                            <td>${ram}</td>
+                            <td>${ssd}</td>
+                            <td>${color}</td>
+                            <td class="text-danger fw-bold">${price.toLocaleString('vi-VN')} đ</td>
                             <td><span class="badge bg-primary">${inStockCount}</span></td>
                             <td class="text-end pe-4">
-                                <button class="btn btn-sm btn-outline-primary me-1" onclick='editVariant(${JSON.stringify(v)})'>
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick='editVariant(${JSON.stringify(normV).replace(/'/g, "&apos;")})'>
                                     Sửa
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteVariant(${v.variantId}, ${v.productId})">
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteVariant(${variantId}, ${productId})">
                                     Xóa
                                 </button>
                             </td>
                         </tr>
                     `;
                 });
+            })
+            .catch(err => {
+                console.error("Lỗi khi tải biến thể:", err);
+                const tbody = document.querySelector('#variantsTable tbody');
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Có lỗi xảy ra khi tải dữ liệu.</td></tr>`;
             });
         }
 

@@ -102,7 +102,7 @@ namespace WebClient.Pages.Auth
                     }
 
                     var claimsIdentity = new ClaimsIdentity(claims, "MyCookieAuth");
-                    var authProperties = new AuthenticationProperties { IsPersistent = true, ExpiresUtc = DateTimeOffset.UtcNow.AddHours(3) };
+                    var authProperties = new AuthenticationProperties { IsPersistent = true, ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30) };
 
                     await HttpContext.SignInAsync("MyCookieAuth", new ClaimsPrincipal(claimsIdentity), authProperties);
 
@@ -169,7 +169,7 @@ namespace WebClient.Pages.Auth
             var authProperties = new AuthenticationProperties
             {
                 IsPersistent = true,
-                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(3)
+                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30)
             };
 
             // 2. Kích hoạt Cookie - Chính thức cho User này vào cổng bảo mật của Razor Pages

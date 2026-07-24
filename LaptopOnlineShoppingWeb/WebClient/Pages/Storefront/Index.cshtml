@@ -61,9 +61,8 @@
                         {
                             <span class="badge bg-danger position-absolute m-2 end-0 rounded-pill">Hết hàng</span>
                         }
-                        
                         <a href="/Storefront/ProductDetail/@item.VariantId" class="d-flex align-items-center justify-content-center bg-light rounded-top-3 p-3 position-relative text-decoration-none" style="height: 180px; overflow: hidden;">
-                            <i class="bi bi-laptop text-secondary" style="font-size: 5rem;"></i>
+                            <img src="/images/products/@(item.Product?.ProductCode).jpg" class="img-fluid" style="max-height: 150px; object-fit: contain;" onerror="this.src='/images/products/default.jpg';"/>
                         </a>
                         
                         <div class="card-body d-flex flex-column p-3">
