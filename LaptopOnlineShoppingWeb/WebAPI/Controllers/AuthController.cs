@@ -1,4 +1,4 @@
-﻿using Google.Apis.Auth;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -163,7 +163,7 @@ namespace WebAPI.Controllers
               issuer: _configuration["Jwt:Issuer"],
               audience: _configuration["Jwt:Audience"],
               claims: claims,
-              expires: DateTime.Now.AddHours(3),
+              expires: DateTime.Now.AddDays(30),
               signingCredentials: creds
             );
 

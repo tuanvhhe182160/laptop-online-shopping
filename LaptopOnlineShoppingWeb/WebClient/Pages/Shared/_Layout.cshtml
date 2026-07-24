@@ -132,9 +132,109 @@
         </main>
     </div>
 
-    <footer class="border-top footer text-muted bg-light py-3 mt-auto">
-        <div class="container text-center small">
-            &copy; 2026 - LaptopShop System - <a asp-area="" asp-page="/Privacy">Privacy Policy</a>
+    <style>
+        .hover-white:hover { color: #fff !important; }
+    </style>
+
+    <!-- Khối 4 đặc quyền bảo đảm -->
+    <div class="bg-light py-5 border-top mt-auto">
+        <div class="container">
+            <div class="row text-center g-4">
+                <div class="col-6 col-md-3">
+                    <i class="bi bi-shield-check text-primary mb-3" style="font-size: 3rem;"></i>
+                    <h6 class="fw-bold mb-1">Thương hiệu đảm bảo</h6>
+                    <p class="text-muted small mb-0">Nhập khẩu, bảo hành chính hãng</p>
+                </div>
+                <div class="col-6 col-md-3">
+                    <i class="bi bi-arrow-repeat text-primary mb-3" style="font-size: 3rem;"></i>
+                    <h6 class="fw-bold mb-1">Đổi trả dễ dàng</h6>
+                    <p class="text-muted small mb-0">Theo chính sách đổi trả tại LaptopShop</p>
+                </div>
+                <div class="col-6 col-md-3">
+                    <i class="bi bi-truck text-primary mb-3" style="font-size: 3rem;"></i>
+                    <h6 class="fw-bold mb-1">Giao hàng tận nơi</h6>
+                    <p class="text-muted small mb-0">Trên toàn quốc</p>
+                </div>
+                <div class="col-6 col-md-3">
+                    <i class="bi bi-award text-primary mb-3" style="font-size: 3rem;"></i>
+                    <h6 class="fw-bold mb-1">Sản phẩm chất lượng</h6>
+                    <p class="text-muted small mb-0">Đảm bảo tương thích và độ bền cao</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer tối màu -->
+    <footer class="py-5 text-light" style="background-color: #111419;">
+        <div class="container">
+            <!-- Top row -->
+            <div class="row align-items-center mb-4 pb-4 border-bottom border-secondary">
+                <div class="col-md-8">
+                    <h5 class="fw-bold mb-1">Hệ thống LaptopShop trên toàn quốc</h5>
+                    <p class="text-secondary mb-0 small">Bao gồm Cửa hàng LaptopShop, Trung tâm Điện máy, Trung tâm Laptop, Garmin Brand Store</p>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <a href="#" class="btn btn-primary rounded-pill px-4 fw-bold">Xem danh sách cửa hàng</a>
+                </div>
+            </div>
+
+            <!-- 4 columns -->
+            <div class="row g-4">
+                <div class="col-md-3">
+                    <h6 class="fw-bold text-uppercase mb-3" style="font-size: 0.9rem;">Tải ứng dụng LaptopShop</h6>
+                    <div class="d-flex align-items-center">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg" alt="QR Code" class="bg-white p-1 rounded me-2" style="width: 80px;">
+                        <div>
+                            <a href="#" class="btn btn-outline-light px-3 py-1 rounded d-flex align-items-center mb-2" style="border-color: #333;">
+                                <i class="bi bi-apple fs-4 me-2"></i>
+                                <div class="text-start" style="line-height: 1;">
+                                    <span class="small text-secondary" style="font-size: 10px;">Tải ngay trên</span><br/>
+                                    <strong>App Store</strong>
+                                </div>
+                            </a>
+                            <a href="#" class="btn btn-outline-light px-3 py-1 rounded d-flex align-items-center" style="border-color: #333;">
+                                <i class="bi bi-google-play fs-4 me-2"></i>
+                                <div class="text-start" style="line-height: 1;">
+                                    <span class="small text-secondary" style="font-size: 10px;">Tải ngay trên</span><br/>
+                                    <strong>Google Play</strong>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <h6 class="fw-bold text-uppercase mb-3" style="font-size: 0.9rem;">Về chúng tôi</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><a href="#" class="text-secondary text-decoration-none hover-white small">Giới thiệu về công ty</a></li>
+                        <li class="mb-2"><a href="#" class="text-secondary text-decoration-none hover-white small">Quy chế hoạt động</a></li>
+                        <li class="mb-2"><a href="#" class="text-secondary text-decoration-none hover-white small">Chính sách bảo mật</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-md-3">
+                    <h6 class="fw-bold text-uppercase mb-3" style="font-size: 0.9rem;">Chính sách</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><a href="#" class="text-secondary text-decoration-none hover-white small">Chính sách bảo hành</a></li>
+                        <li class="mb-2"><a href="#" class="text-secondary text-decoration-none hover-white small">Chính sách đổi trả</a></li>
+                        <li class="mb-2"><a href="#" class="text-secondary text-decoration-none hover-white small">Giao hàng & lắp đặt</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-md-3">
+                    <h6 class="fw-bold text-uppercase mb-3" style="font-size: 0.9rem;">Hỗ trợ thanh toán</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        <div class="bg-white text-dark px-2 py-1 rounded fw-bold small d-inline-block">VISA</div>
+                        <div class="bg-white text-dark px-2 py-1 rounded fw-bold small d-inline-block">MasterCard</div>
+                        <div class="bg-white text-dark px-2 py-1 rounded fw-bold small d-inline-block">JCB</div>
+                        <div class="bg-white text-dark px-2 py-1 rounded fw-bold small d-inline-block">ATM</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-5 pt-3 border-top border-secondary text-secondary small">
+                &copy; 2026 - LaptopShop System
+            </div>
         </div>
     </footer>
 

@@ -13,9 +13,24 @@
     <!-- Product Info Section -->
     <div class="row mb-5">
         <div class="col-md-5">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-body d-flex align-items-center justify-content-center bg-light" style="height: 400px;">
-                    <i class="bi bi-laptop text-secondary opacity-50" style="font-size: 10rem;"></i>
+            <!-- Khung ảnh chính có hiệu ứng zoom -->
+            <div class="card border-0 shadow-sm rounded-3 mb-3 overflow-hidden product-image-container" id="mainImageContainer">
+                <img src="/images/products/@(Model.Variant?.Product?.ProductCode).jpg" alt="Main Product Image" class="img-fluid w-100" id="mainImage" onerror="this.src='/images/products/default.jpg';" />
+            </div>
+            
+            <!-- Danh sách ảnh Thumbnail -->
+            <div class="row g-2" id="thumbnailGallery">
+                <div class="col-3">
+                    <img src="/images/products/@(Model.Variant?.Product?.ProductCode).jpg" class="img-thumbnail cursor-pointer active-thumb" onclick="changeMainImage(this.src)" onerror="this.style.display='none';" />
+                </div>
+                <div class="col-3">
+                    <img src="/images/products/@(Model.Variant?.Product?.ProductCode)-1.jpg" class="img-thumbnail cursor-pointer" onclick="changeMainImage(this.src)" onerror="this.style.display='none';" />
+                </div>
+                <div class="col-3">
+                    <img src="/images/products/@(Model.Variant?.Product?.ProductCode)-2.jpg" class="img-thumbnail cursor-pointer" onclick="changeMainImage(this.src)" onerror="this.style.display='none';" />
+                </div>
+                <div class="col-3">
+                    <img src="/images/products/@(Model.Variant?.Product?.ProductCode)-3.jpg" class="img-thumbnail cursor-pointer" onclick="changeMainImage(this.src)" onerror="this.style.display='none';" />
                 </div>
             </div>
         </div>
@@ -30,13 +45,45 @@
             
             <div class="card border-0 bg-light mb-4">
                 <div class="card-body">
-                    <h6 class="fw-bold border-bottom pb-2 mb-3">Cấu hình chi tiết</h6>
-                    <ul class="list-unstyled mb-0">
-                        <li class="mb-2"><strong>CPU:</strong> @Model.Variant?.CPU</li>
-                        <li class="mb-2"><strong>RAM:</strong> @Model.Variant?.RAM</li>
-                        <li class="mb-2"><strong>Ổ cứng:</strong> @Model.Variant?.SSD</li>
-                        <li class="mb-0"><strong>Màu sắc:</strong> @Model.Variant?.Color</li>
-                    </ul>
+                    <h6 class="fw-bold border-bottom pb-2 mb-3">Thông số nổi bật</h6>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="d-flex align-items-center bg-white p-2 rounded border border-light shadow-sm">
+                                <i class="bi bi-cpu fs-4 text-primary me-2"></i>
+                                <div class="text-truncate">
+                                    <small class="text-muted d-block" style="font-size:0.75rem;">CPU</small>
+                                    <span class="fw-semibold" style="font-size:0.9rem;" title="@Model.Variant?.CPU">@Model.Variant?.CPU</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center bg-white p-2 rounded border border-light shadow-sm">
+                                <i class="bi bi-memory fs-4 text-success me-2"></i>
+                                <div class="text-truncate">
+                                    <small class="text-muted d-block" style="font-size:0.75rem;">RAM</small>
+                                    <span class="fw-semibold" style="font-size:0.9rem;" title="@Model.Variant?.RAM">@Model.Variant?.RAM</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center bg-white p-2 rounded border border-light shadow-sm">
+                                <i class="bi bi-device-hdd fs-4 text-secondary me-2"></i>
+                                <div class="text-truncate">
+                                    <small class="text-muted d-block" style="font-size:0.75rem;">Ổ CỨNG</small>
+                                    <span class="fw-semibold" style="font-size:0.9rem;" title="@Model.Variant?.SSD">@Model.Variant?.SSD</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center bg-white p-2 rounded border border-light shadow-sm">
+                                <i class="bi bi-palette fs-4 text-danger me-2"></i>
+                                <div class="text-truncate">
+                                    <small class="text-muted d-block" style="font-size:0.75rem;">MÀU SẮC</small>
+                                    <span class="fw-semibold" style="font-size:0.9rem;" title="@Model.Variant?.Color">@Model.Variant?.Color</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -63,6 +110,22 @@
             </div>
         </div>
     </div>
+
+    <!-- Product Description Rich Text Section -->
+    @if (!string.IsNullOrWhiteSpace(Model.Variant?.Product?.Description))
+    {
+        <hr class="my-5" />
+        <div class="row">
+            <div class="col-12">
+                <h4 class="fw-bold mb-4">Đặc điểm nổi bật & Cấu hình chi tiết</h4>
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4 bg-white rounded-3 content-rich-text" style="overflow-x: auto;">
+                        @Html.Raw(Model.Variant.Product.Description)
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 
     <!-- Feedback Section -->
     <hr class="my-5" />
@@ -125,6 +188,76 @@
         </div>
     </div>
 </div>
+
+
+
+<style>
+    /* Styling cho Thumbnail */
+    .cursor-pointer { cursor: pointer; }
+    .img-thumbnail { opacity: 0.6; transition: opacity 0.2s, border-color 0.2s; }
+    .img-thumbnail:hover { opacity: 1; }
+    .active-thumb { opacity: 1; border-color: #0d6efd; border-width: 2px; }
+
+    /* Styling cho khung Zoom ảnh chính */
+    .product-image-container {
+        height: 400px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8f9fa;
+        position: relative;
+    }
+    .product-image-container img {
+        object-fit: contain;
+        width: 100%;
+        height: 100%;
+        transition: transform 0.1s ease;
+        transform-origin: center center;
+    }
+    
+    /* Styling cho phần Rich Text (Mô tả sản phẩm) */
+    .content-rich-text {
+        font-size: 1rem;
+        line-height: 1.8;
+        color: #333;
+    }
+    .content-rich-text h3 {
+        font-weight: 700;
+        color: #0d6efd;
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 0.5rem;
+    }
+    .content-rich-text ul {
+        margin-bottom: 1.5rem;
+        padding-left: 1.5rem;
+    }
+    .content-rich-text li {
+        margin-bottom: 0.5rem;
+    }
+    /* Biến Table mặc định thành chuẩn Bootstrap */
+    .content-rich-text table {
+        width: 100%;
+        margin-bottom: 1rem;
+        color: #212529;
+        vertical-align: top;
+        border-color: #dee2e6;
+        border-collapse: collapse;
+    }
+    .content-rich-text table th,
+    .content-rich-text table td {
+        padding: 0.75rem;
+        border: 1px solid #dee2e6;
+    }
+    .content-rich-text table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+    .content-rich-text table tr:nth-of-type(odd) {
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+</style>
 
 @section Scripts {
     <script>
@@ -412,6 +545,36 @@
                 var qty = parseInt($('#qty').val()) || 1;
                 window.location.href = `/Storefront/Checkout?buynow=true&variantid=${vId}&qty=${qty}`;
             });
+
+            // Logic Zoom (In-place) khi rê chuột
+            const container = document.getElementById('mainImageContainer');
+            const img = document.getElementById('mainImage');
+            
+            if (container && img) {
+                container.addEventListener('mousemove', function(e) {
+                    const rect = container.getBoundingClientRect();
+                    const x = ((e.clientX - rect.left) / rect.width) * 100;
+                    const y = ((e.clientY - rect.top) / rect.height) * 100;
+                    
+                    img.style.transformOrigin = `${x}% ${y}%`;
+                    img.style.transform = 'scale(2)';
+                });
+
+                container.addEventListener('mouseleave', function() {
+                    img.style.transform = 'scale(1)';
+                    img.style.transformOrigin = 'center center';
+                });
+            }
         });
+
+        // Đổi ảnh khi click thumbnail
+        function changeMainImage(src) {
+            document.getElementById('mainImage').src = src;
+            
+            document.querySelectorAll('#thumbnailGallery img').forEach(img => {
+                if(img.src === src) img.classList.add('active-thumb');
+                else img.classList.remove('active-thumb');
+            });
+        }
     </script>
 }

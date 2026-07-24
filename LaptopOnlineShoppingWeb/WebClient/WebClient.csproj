@@ -10,4 +10,10 @@
     <ProjectReference Include="..\WebAPI\WebAPI.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Watch Remove="wwwroot\**" />
+    <Content Update="wwwroot\**" Watch="false" />
+    <None Update="wwwroot\**" Watch="false" />
+  </ItemGroup>
+
 </Project>

@@ -33,6 +33,12 @@ namespace WebAPI.Controllers
                 return BadRequest(new { message = "Bạn không có quyền nhập kho do không thuộc chi nhánh hợp lệ." });
             }
 
+            // Mặc định: Nếu Admin (BranchId = 0) nhập kho, mặc định chuyển về Chi nhánh 1
+            if (branchId == 0)
+            {
+                branchId = 1;
+            }
+
             var result = await _warehouseService.ImportProductsAsync(request, branchId);
             
             if (!result.Success)
