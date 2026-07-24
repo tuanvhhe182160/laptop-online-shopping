@@ -34,8 +34,8 @@ namespace WebAPI.Controllers
             var adminUser = _configuration["AdminAccount:Username"];
             var adminPass = _configuration["AdminAccount:Password"];
 
-            // 1. Check Hardcoded Admin
-            if (request.Username == adminUser && request.Password == adminPass)
+            // 1. Check Hardcoded Admin
+            if (request.Username == adminUser && request.Password == adminPass)
             {
                 var adminToken = GenerateJwtToken("0", adminUser!, "Admin", _configuration["AdminAccount:FullName"]!, null, null);
                 return Ok(new LoginResponse
@@ -50,11 +50,11 @@ namespace WebAPI.Controllers
 
             string inputUsername = request.Username?.Trim() ?? "";
             if (inputUsername == "admin / staff...") inputUsername = "admin";
-            
+
             // 2. Check DB Users
             var user = await _context.Users
-                .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => (u.Username == inputUsername || u.Email == inputUsername) && u.IsActive == true);
+        .Include(u => u.Role)
+        .FirstOrDefaultAsync(u => (u.Username == inputUsername || u.Email == inputUsername) && u.IsActive == true);
 
             if (user == null) return Unauthorized(new { message = "Tài khoản không tồn tại hoặc đã bị khóa." });
 
@@ -63,8 +63,8 @@ namespace WebAPI.Controllers
 
             string roleName = user.Role?.RoleName ?? "Staff";
 
-            // Truyền BranchId vào Token
-            var token = GenerateJwtToken(user.UserId.ToString(), user.Username, roleName, user.FullName, user.AvatarUrl, user.BranchId);
+            // Truyền BranchId vào Token
+            var token = GenerateJwtToken(user.UserId.ToString(), user.Username, roleName, user.FullName, user.AvatarUrl, user.BranchId);
 
             return Ok(new LoginResponse
             {
@@ -109,7 +109,7 @@ namespace WebAPI.Controllers
         public async Task<IActionResult> CustomerLogin([FromBody] LoginRequest request)
         {
             var customer = await _context.Customers
-                .FirstOrDefaultAsync(c => c.Username == request.Username && c.IsActive == true);
+              .FirstOrDefaultAsync(c => c.Username == request.Username && c.IsActive == true);
 
             if (customer == null)
             {
@@ -122,8 +122,8 @@ namespace WebAPI.Controllers
                 return Unauthorized(new { message = "Sai mật khẩu." });
             }
 
-            // Customer không thuộc chi nhánh nào nên truyền BranchId = null
-            var token = GenerateJwtToken(customer.CustomerId.ToString(), customer.Username, "Customer", customer.FullName, customer.AvatarUrl, null);
+            // Customer không thuộc chi nhánh nào nên truyền BranchId = null
+            var token = GenerateJwtToken(customer.CustomerId.ToString(), customer.Username, "Customer", customer.FullName, customer.AvatarUrl, null);
 
             return Ok(new LoginResponse
             {
@@ -138,13 +138,13 @@ namespace WebAPI.Controllers
         private string GenerateJwtToken(string id, string username, string role, string fullName, string? avatarUrl, int? branchId)
         {
             var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, id),
-                new Claim(ClaimTypes.Name, username),
-                new Claim(ClaimTypes.Role, role),
-                new Claim("FullName", fullName),
-                new Claim("AvatarUrl", avatarUrl ?? "")
-            };
+      {
+        new Claim(ClaimTypes.NameIdentifier, id),
+        new Claim(ClaimTypes.Name, username),
+        new Claim(ClaimTypes.Role, role),
+        new Claim("FullName", fullName),
+        new Claim("AvatarUrl", avatarUrl ?? "")
+      };
 
             if (branchId.HasValue)
             {
@@ -152,19 +152,19 @@ namespace WebAPI.Controllers
             }
             else
             {
-                // Quy ước: BranchId = 0 là không bị giới hạn chi nhánh (Dành cho Admin tổng hoặc Customer)
-                claims.Add(new Claim("BranchId", "0"));
+                // Quy ước: BranchId = 0 là không bị giới hạn chi nhánh (Dành cho Admin tổng hoặc Customer)
+                claims.Add(new Claim("BranchId", "0"));
             }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddHours(3),
-                signingCredentials: creds
+              issuer: _configuration["Jwt:Issuer"],
+              audience: _configuration["Jwt:Audience"],
+              claims: claims,
+              expires: DateTime.Now.AddHours(3),
+              signingCredentials: creds
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
@@ -181,21 +181,21 @@ namespace WebAPI.Controllers
             if (customer == null)
                 return BadRequest(new { message = "Email không tồn tại trong hệ thống." });
 
-            // 1. Sinh Token ngẫu nhiên (6 số)
-            string resetToken = new Random().Next(100000, 999999).ToString();
+            // 1. Sinh Token ngẫu nhiên (6 số)
+            string resetToken = new Random().Next(100000, 999999).ToString();
 
-            // 2. Lưu vào DB kèm thời hạn 15 phút
-            customer.ResetPasswordToken = resetToken;
+            // 2. Lưu vào DB kèm thời hạn 15 phút
+            customer.ResetPasswordToken = resetToken;
             customer.ResetPasswordExpiry = DateTime.Now.AddMinutes(15);
             await _context.SaveChangesAsync();
 
-            // 3. Gửi Email chứa Token
-            string subject = "Yêu cầu khôi phục mật khẩu";
+            // 3. Gửi Email chứa Token
+            string subject = "Yêu cầu khôi phục mật khẩu";
             string body = $@"
-                <h3>Xin chào {customer.FullName},</h3>
-                <p>Bạn đã yêu cầu đặt lại mật khẩu tại LaptopShop.</p>
-                <p>Mã xác nhận của bạn là: <strong style='font-size:24px; color:blue;'>{resetToken}</strong></p>
-                <p>Mã này sẽ hết hạn sau 15 phút. Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</p>";
+                <h3>Xin chào {customer.FullName},</h3>
+                <p>Bạn đã yêu cầu đặt lại mật khẩu tại LaptopShop.</p>
+                <p>Mã xác nhận của bạn là: <strong style='font-size:24px; color:blue;'>{resetToken}</strong></p>
+                <p>Mã này sẽ hết hạn sau 15 phút. Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</p>";
 
             try
             {
@@ -222,11 +222,11 @@ namespace WebAPI.Controllers
             if (customer.ResetPasswordExpiry < DateTime.Now)
                 return BadRequest(new { message = "Mã xác nhận đã hết hạn. Vui lòng yêu cầu mã mới." });
 
-            // Cập nhật mật khẩu mới
-            customer.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            // Cập nhật mật khẩu mới
+            customer.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
 
-            // Xóa token sau khi dùng xong
-            customer.ResetPasswordToken = null;
+            // Xóa token sau khi dùng xong
+            customer.ResetPasswordToken = null;
             customer.ResetPasswordExpiry = null;
 
             await _context.SaveChangesAsync();
@@ -239,28 +239,28 @@ namespace WebAPI.Controllers
         {
             try
             {
-                // 1. Nhờ thư viện Google xác thực cái IdToken này xem có bị làm giả không
-                var settings = new GoogleJsonWebSignature.ValidationSettings()
+                // 1. Nhờ thư viện Google xác thực cái IdToken này xem có bị làm giả không
+                var settings = new GoogleJsonWebSignature.ValidationSettings()
                 {
                     Audience = new List<string>() { _configuration["Google:ClientId"]! }
                 };
 
-                // Payload chứa toàn bộ thông tin thật của Google trả về (Email, Tên, Ảnh đại diện...)
-                var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
+                // Payload chứa toàn bộ thông tin thật của Google trả về (Email, Tên, Ảnh đại diện...)
+                var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
 
-                // 2. Đối chiếu Email Google với DB của hệ thống
-                var user = await _context.Users
-                    .Include(u => u.Role)
-                    .FirstOrDefaultAsync(u => u.Email == payload.Email && u.IsActive == true);
+                // 2. Đối chiếu Email Google với DB của hệ thống
+                var user = await _context.Users
+          .Include(u => u.Role)
+          .FirstOrDefaultAsync(u => u.Email == payload.Email && u.IsActive == true);
 
-                // LUẬT THÉP: Email chưa được Admin tạo trong DB thì không cho vào!
-                if (user == null)
+                // LUẬT THÉP: Email chưa được Admin tạo trong DB thì không cho vào!
+                if (user == null)
                 {
                     return Unauthorized(new { message = "Email này chưa được Admin cấp quyền truy cập hệ thống nội bộ." });
                 }
 
-                // 3. (Tùy chọn) Cập nhật lại Avatar hoặc Tên nếu Google có đổi
-                bool isUpdated = false;
+                // 3. (Tùy chọn) Cập nhật lại Avatar hoặc Tên nếu Google có đổi
+                bool isUpdated = false;
                 if (string.IsNullOrEmpty(user.AvatarUrl) && !string.IsNullOrEmpty(payload.Picture))
                 {
                     user.AvatarUrl = payload.Picture;
@@ -268,15 +268,15 @@ namespace WebAPI.Controllers
                 }
                 if (isUpdated) await _context.SaveChangesAsync();
 
-                // 4. Sinh JWT Token của hệ thống mình và trả về (y chang lúc login bằng mật khẩu)
-                var token = GenerateJwtToken(
-                    user.UserId.ToString(),
-                    user.Username,
-                    user.Role.RoleName,
-                    user.FullName,
-                    user.AvatarUrl,
-                    user.BranchId
-                );
+                // 4. Sinh JWT Token của hệ thống mình và trả về (y chang lúc login bằng mật khẩu)
+                var token = GenerateJwtToken(
+          user.UserId.ToString(),
+          user.Username,
+          user.Role.RoleName,
+          user.FullName,
+          user.AvatarUrl,
+          user.BranchId
+        );
 
                 return Ok(new LoginResponse
                 {
@@ -289,8 +289,8 @@ namespace WebAPI.Controllers
             }
             catch (InvalidJwtException)
             {
-                // Bắt lỗi nếu Token Google bị fake hoặc hết hạn
-                return BadRequest(new { message = "Mã xác thực Google không hợp lệ hoặc đã hết hạn." });
+                // Bắt lỗi nếu Token Google bị fake hoặc hết hạn
+                return BadRequest(new { message = "Mã xác thực Google không hợp lệ hoặc đã hết hạn." });
             }
             catch (Exception ex)
             {
@@ -303,40 +303,40 @@ namespace WebAPI.Controllers
         {
             try
             {
-                // 1. Nhờ thư viện Google xác thực cái IdToken này xem có bị làm giả không
-                var settings = new GoogleJsonWebSignature.ValidationSettings()
+                // 1. Nhờ thư viện Google xác thực cái IdToken này xem có bị làm giả không
+                var settings = new GoogleJsonWebSignature.ValidationSettings()
                 {
                     Audience = new List<string>() { _configuration["Google:ClientId"]! }
                 };
 
-                // Payload chứa toàn bộ thông tin thật của Google trả về (Email, Tên, Ảnh đại diện...)
-                var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
+                // Payload chứa toàn bộ thông tin thật của Google trả về (Email, Tên, Ảnh đại diện...)
+                var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
 
-                // 2. Đối chiếu Email Google với DB của hệ thống (Bảng Customers)
-                var customer = await _context.Customers
-                    .FirstOrDefaultAsync(c => c.Email == payload.Email && c.IsActive == true);
+                // 2. Đối chiếu Email Google với DB của hệ thống (Bảng Customers)
+                var customer = await _context.Customers
+          .FirstOrDefaultAsync(c => c.Email == payload.Email && c.IsActive == true);
 
-                // Nếu không tìm thấy Customer, tiến hành tạo mới tự động (Auto-Registration)
-                if (customer == null)
+                // Nếu không tìm thấy Customer, tiến hành tạo mới tự động (Auto-Registration)
+                if (customer == null)
                 {
                     customer = new Customer
                     {
                         Username = payload.Email,
                         Email = payload.Email,
                         FullName = payload.Name, // Hoặc thuộc tính tương ứng trong Model của bạn (ví dụ: Name)
-                        AvatarUrl = payload.Picture, // Hoặc thuộc tính lưu ảnh đại diện (ví dụ: Picture)
-                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("GOOGLE_LOGIN_ONLY"),
+                        AvatarUrl = payload.Picture, // Hoặc thuộc tính lưu ảnh đại diện (ví dụ: Picture)
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("GOOGLE_LOGIN_ONLY"),
                         IsGoogleAccount = true,
                         IsActive = true,
                     };
 
-                    // Lưu vào Database
-                    _context.Customers.Add(customer);
+                    // Lưu vào Database
+                    _context.Customers.Add(customer);
                     await _context.SaveChangesAsync();
                 }
 
-                // 3. (Tùy chọn) Cập nhật lại Avatar hoặc Tên nếu Google có đổi
-                bool isUpdated = false;
+                // 3. (Tùy chọn) Cập nhật lại Avatar hoặc Tên nếu Google có đổi
+                bool isUpdated = false;
                 if (string.IsNullOrEmpty(customer.AvatarUrl) && !string.IsNullOrEmpty(payload.Picture))
                 {
                     customer.AvatarUrl = payload.Picture;
@@ -344,15 +344,15 @@ namespace WebAPI.Controllers
                 }
                 if (isUpdated) await _context.SaveChangesAsync();
 
-                // 4. Sinh JWT Token của hệ thống mình và trả về (y chang lúc login bằng mật khẩu)
-                var token = GenerateJwtToken(
-                    customer.CustomerId.ToString(),
-                    customer.Email,
-                    "Customer",
-                    customer.FullName,
-                    customer.AvatarUrl,
-                    null
-                );              
+                // 4. Sinh JWT Token của hệ thống mình và trả về (y chang lúc login bằng mật khẩu)
+                var token = GenerateJwtToken(
+          customer.CustomerId.ToString(),
+          customer.Email,
+          "Customer",
+          customer.FullName,
+          customer.AvatarUrl,
+          null
+        );
 
                 return Ok(new LoginResponse
                 {
@@ -365,8 +365,8 @@ namespace WebAPI.Controllers
             }
             catch (InvalidJwtException)
             {
-                // Bắt lỗi nếu Token Google bị fake hoặc hết hạn
-                return BadRequest(new { message = "Mã xác thực Google không hợp lệ hoặc đã hết hạn." });
+                // Bắt lỗi nếu Token Google bị fake hoặc hết hạn
+                return BadRequest(new { message = "Mã xác thực Google không hợp lệ hoặc đã hết hạn." });
             }
             catch (Exception ex)
             {
