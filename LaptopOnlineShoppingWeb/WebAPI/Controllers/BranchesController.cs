@@ -9,7 +9,6 @@ namespace WebAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin,WarehouseManager,Staff")]
     public class BranchesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -20,6 +19,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin,WarehouseManager,Staff")]
         public async Task<IActionResult> GetAll()
         {
             var branches = await _context.Branches.AsNoTracking().ToListAsync();
@@ -27,6 +27,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "Admin,WarehouseManager,Staff")]
         public async Task<IActionResult> GetById(int id)
         {
             var branch = await _context.Branches.FindAsync(id);
