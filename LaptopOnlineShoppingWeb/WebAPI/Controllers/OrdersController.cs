@@ -1,43 +1,45 @@
-using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
+using Microsoft.Extensions.Configuration;
+using System.Globalization;
 using System.Security.Claims;
 using WebAPI.DTOs;
 using WebAPI.Services;
 
 namespace WebAPI.Controllers
 {
-   [Route("api/[controller]")]
-   [ApiController]
-   public class OrdersController : ControllerBase
-   {
-       private readonly IOrderService _service;
+    [Route("api/[controller]")]
+    [ApiController]
+    public class OrdersController : ControllerBase
+    {
+        private readonly IOrderService _service;
+        private readonly IConfiguration _configuration;
 
-       public OrdersController(IOrderService service)
-       {
-           _service = service;
-       }
+        public OrdersController(IOrderService service, IConfiguration configuration)
+        {
+            _service = service;
+            _configuration = configuration;
+        }
 
-       private int GetCurrentCustomerId()
-       {
-           var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-           return int.Parse(userIdStr!);
-       }
+        private int GetCurrentCustomerId()
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.Parse(userIdStr!);
+        }
 
         [HttpGet]
-        [EnableQuery] // Hỗ trợ OData ($filter, $orderby...)
+        [EnableQuery]
         [Authorize(Roles = "Admin,Staff")]
         public async Task<IActionResult> GetAll()
         {
             var orders = await _service.GetAllOrdersAsync();
 
-            // Phân quyền dữ liệu: Staff chỉ được xem đơn hàng của chi nhánh mình
             if (User.IsInRole("Staff"))
             {
                 var branchIdClaim = User.FindFirst("BranchId")?.Value;
                 if (!string.IsNullOrEmpty(branchIdClaim) && int.TryParse(branchIdClaim, out int branchId))
                 {
-                    // Lọc đơn hàng theo BranchId (Yêu cầu bổ sung thuộc tính BranchId vào OrderResponseDTO)
                     orders = orders.Where(o => o.BranchId == branchId);
                 }
                 else
@@ -46,25 +48,24 @@ namespace WebAPI.Controllers
                 }
             }
 
-            return Ok(orders.AsQueryable()); // Ép kiểu AsQueryable để OData hoạt động tối ưu
+            return Ok(orders.AsQueryable());
         }
 
-       [HttpGet("my-orders")]
-       [Authorize(Roles = "Customer")]
-       public async Task<IActionResult> GetMyOrders()
-       {
-           var orders = await _service.GetOrdersByCustomerAsync(GetCurrentCustomerId());
-           return Ok(orders);
-       }
+        [HttpGet("my-orders")]
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> GetMyOrders()
+        {
+            var orders = await _service.GetOrdersByCustomerAsync(GetCurrentCustomerId());
+            return Ok(orders);
+        }
 
         [HttpGet("{id}/details")]
-        [Authorize] // Bắt buộc đăng nhập (Khách xem đơn của mình, Admin/Staff xem để duyệt)
+        [Authorize]
         public async Task<IActionResult> GetDetails(int id)
         {
             var order = await _service.GetOrderDetailsAsync(id);
             if (order == null) return NotFound("Không tìm thấy đơn hàng.");
 
-            // Nếu là Customer, chặn không cho xem đơn của người khác
             if (User.IsInRole("Customer") && order.CustomerId != GetCurrentCustomerId())
             {
                 return Forbid("Bạn không có quyền xem đơn hàng này.");
@@ -81,11 +82,36 @@ namespace WebAPI.Controllers
             {
                 var order = await _service.CheckoutFromCartAsync(GetCurrentCustomerId(), dto);
                 if (order == null) return BadRequest("Thanh toán thất bại. Giỏ hàng trống hoặc dữ liệu không hợp lệ.");
-                return Ok(order);
+
+                string paymentMethod = dto.PaymentMethod?.ToUpper() ?? "COD";
+
+                if (paymentMethod == "COD")
+                {
+                    return Ok(new
+                    {
+                        Success = true,
+                        Message = "Đặt hàng thành công với COD!",
+                        OrderData = order,
+                        PaymentUrl = ""
+                    });
+                }
+                else if (paymentMethod == "VNPAY")
+                {
+                    string vnpayUrl = GenerateVnPayUrl(order.OrderId, order.TotalAmount);
+
+                    return Ok(new
+                    {
+                        Success = true,
+                        Message = "Đang chuyển hướng sang VNPay...",
+                        OrderData = order,
+                        PaymentUrl = vnpayUrl
+                    });
+                }
+
+                return BadRequest("Phương thức thanh toán không hợp lệ.");
             }
             catch (Exception ex)
             {
-                // Bắt lỗi Exception ném ra từ Database Transaction (Ví dụ: Trùng serial, hết hàng vật lý)
                 return BadRequest(new { message = ex.Message });
             }
         }
@@ -98,11 +124,23 @@ namespace WebAPI.Controllers
             {
                 var order = await _service.CheckoutDirectlyAsync(GetCurrentCustomerId(), dto);
                 if (order == null) return BadRequest("Thanh toán thất bại. Dữ liệu không hợp lệ.");
-                return Ok(order);
+
+                string paymentMethod = dto.PaymentMethod?.ToUpper() ?? "COD";
+
+                if (paymentMethod == "COD")
+                {
+                    return Ok(new { Success = true, Message = "Đặt hàng thành công với COD!", OrderData = order, PaymentUrl = "" });
+                }
+                else if (paymentMethod == "VNPAY")
+                {
+                    string vnpayUrl = GenerateVnPayUrl(order.OrderId, order.TotalAmount);
+                    return Ok(new { Success = true, Message = "Đang chuyển sang VNPay...", OrderData = order, PaymentUrl = vnpayUrl });
+                }
+
+                return BadRequest("Phương thức thanh toán không hợp lệ.");
             }
             catch (Exception ex)
             {
-                // Bắt lỗi Exception ném ra từ Database Transaction
                 return BadRequest(new { message = ex.Message });
             }
         }
@@ -115,6 +153,96 @@ namespace WebAPI.Controllers
             if (!result) return NotFound("Không tìm thấy đơn hàng để cập nhật.");
 
             return NoContent();
+        }
+
+        private string GenerateVnPayUrl(int orderId, decimal totalAmount)
+        {
+            string vnp_Returnurl = _configuration["VnPay:ReturnUrl"]!;
+            string vnp_Url = _configuration["VnPay:BaseUrl"]!;
+            string vnp_TmnCode = _configuration["VnPay:TmnCode"]!;
+            string vnp_HashSecret = _configuration["VnPay:HashSecret"]!;
+
+            // --- CHÈN ĐOẠN NÀY ĐỂ KIỂM TRA TRỰC QUAN ---
+            System.Diagnostics.Debug.WriteLine("================ VNPAY CONFIG CHECK ================");
+            System.Diagnostics.Debug.WriteLine($"TmnCode đang dùng: [{vnp_TmnCode}]");
+            System.Diagnostics.Debug.WriteLine($"HashSecret đang dùng: [{vnp_HashSecret}]");
+            System.Diagnostics.Debug.WriteLine($"ReturnUrl đang dùng: [{vnp_Returnurl}]");
+            System.Diagnostics.Debug.WriteLine("====================================================");
+            // -------------------------------------------
+
+            var vnpay = new WebAPI.Helpers.VnPayLibrary();
+
+            vnpay.AddRequestData("vnp_Version", "2.1.0");
+            vnpay.AddRequestData("vnp_Command", "pay");
+            vnpay.AddRequestData("vnp_TmnCode", vnp_TmnCode);
+
+            long vnpayAmount = (long)(totalAmount * 100);
+            vnpay.AddRequestData("vnp_Amount", vnpayAmount.ToString());
+
+            vnpay.AddRequestData("vnp_CreateDate", DateTime.Now.ToString("yyyyMMddHHmmss"));
+            vnpay.AddRequestData("vnp_CurrCode", "VND");
+
+            string ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+            if (ipAddress.Contains("::"))
+            {
+                ipAddress = "127.0.0.1";
+            }
+            vnpay.AddRequestData("vnp_IpAddr", ipAddress);
+
+            vnpay.AddRequestData("vnp_Locale", "vn");
+            vnpay.AddRequestData("vnp_OrderInfo", $"Thanh toan don hang {orderId}");
+            vnpay.AddRequestData("vnp_OrderType", "other");
+            vnpay.AddRequestData("vnp_ReturnUrl", vnp_Returnurl);
+            vnpay.AddRequestData("vnp_TxnRef", orderId.ToString());
+
+            string paymentUrl = vnpay.CreateRequestUrl(vnp_Url, vnp_HashSecret);
+
+            System.Diagnostics.Debug.WriteLine("Generated VNPay URL: " + paymentUrl);
+
+            return paymentUrl;
+        }
+
+        [HttpGet("vnpay-return")]
+        public async Task<IActionResult> PaymentCallback()
+        {
+            var collections = HttpContext.Request.Query;
+            var vnpay = new WebAPI.Helpers.VnPayLibrary();
+
+            foreach (var (key, value) in collections)
+            {
+                if (!string.IsNullOrEmpty(key) && key.StartsWith("vnp_"))
+                {
+                    if (key != "vnp_SecureHash" && key != "vnp_SecureHashType")
+                    {
+                        vnpay.AddResponseData(key, value.ToString());
+                    }
+                }
+            }
+
+            string vnp_HashSecret = _configuration["VnPay:HashSecret"]!;
+            string vnp_SecureHash = collections.FirstOrDefault(k => k.Key == "vnp_SecureHash").Value.ToString();
+
+            long orderId = 0;
+            long.TryParse(vnpay.GetResponseData("vnp_TxnRef"), out orderId);
+            string vnp_ResponseCode = vnpay.GetResponseData("vnp_ResponseCode");
+
+            bool checkSignature = vnpay.ValidateSignature(vnp_SecureHash, vnp_HashSecret);
+
+            if (checkSignature)
+            {
+                if (vnp_ResponseCode == "00")
+                {
+                    // Thanh toán thành công -> Chuyển hướng về Front-end kèm trạng thái success
+                    return Redirect($"https://localhost:7137/Storefront/CheckoutResult?status=success&orderId={orderId}");
+                }
+                else
+                {
+                    // Thanh toán thất bại/hủy -> Chuyển hướng kèm trạng thái failed
+                    return Redirect($"https://localhost:7137/Storefront/CheckoutResult?status=failed&orderId={orderId}");
+                }
+            }
+
+            return BadRequest(new { success = false, message = "Lỗi xác thực chữ ký VNPay (Signature Mismatch)!" });
         }
     }
 }

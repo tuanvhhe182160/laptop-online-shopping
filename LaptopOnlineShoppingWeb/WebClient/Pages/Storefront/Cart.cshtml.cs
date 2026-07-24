@@ -7,7 +7,7 @@ using WebClient.Models;
 
 namespace WebClient.Pages.Storefront
 {
-    [Authorize(Roles = "Customer")]
+    //[Authorize(Roles = "Customer")]
     public class CartModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;
@@ -40,7 +40,7 @@ namespace WebClient.Pages.Storefront
             else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 // Nếu gọi API thất bại do Token hết hạn/lỗi, đẩy về trang Login
-                return RedirectToPage("/Auth/CustomerLogin");
+               return RedirectToPage("/Auth/CustomerLogin");
             }
 
             return Page();

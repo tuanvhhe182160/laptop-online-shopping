@@ -1,0 +1,29 @@
+@page
+@model WebClient.Pages.Storefront.CheckoutResultModel
+<div class="container text-center mt-5">
+    <div id="resultContainer">
+        <!-- Javascript sẽ thay đổi nội dung ở đây tùy theo ?status=success hoặc failed -->
+        <h2>Đang xử lý kết quả thanh toán...</h2>
+    </div>
+</div>
+
+<script>
+    // Đọc tham số trên URL (Ví dụ: /Storefront/CheckoutResult?status=success)
+    const urlParams = new URLSearchParams(window.location.search);
+    const status = urlParams.get('status');
+    const container = document.getElementById('resultContainer');
+
+    if (status === 'success') {
+        container.innerHTML = `
+            <h1 class="text-success">🎉 Thanh toán đơn hàng thành công!</h1>
+            <p>Cảm ơn bạn đã mua hàng tại shop. Đơn hàng của bạn đã được ghi nhận và thanh toán.</p>
+            <a href="/storefront/order-history" class="btn btn-primary mt-3">Xem lịch sử đơn hàng</a>
+        `;
+    } else {
+        container.innerHTML = `
+            <h1 class="text-danger">❌ Thanh toán thất bại hoặc bị hủy!</h1>
+            <p>Giao dịch không thành công hoặc bạn đã bấm hủy trên cổng VNPay.</p>
+            <a href="/Storefront/Cart" class="btn btn-warning mt-3">Quay lại giỏ hàng</a>
+        `;
+    }
+</script>

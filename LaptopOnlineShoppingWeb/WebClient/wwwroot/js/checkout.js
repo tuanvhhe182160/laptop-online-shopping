@@ -54,16 +54,16 @@ document.addEventListener("DOMContentLoaded", () => {
             // Gửi Payload tương ứng với logic Mua ngay (Direct) hoặc Mua từ Giỏ (Cart)
             if (isBuyNow) {
                 const payload = { variantId, quantity, shippingAddress, paymentMethod };
-                await processCheckout(`${API_BASE}/api/Orders/checkout-direct`, payload);
+                await processCheckout(`${API_BASE}/api/Orders/checkout-direct`, payload, paymentMethod);
             } else {
                 const payload = { shippingAddress, paymentMethod };
-                await processCheckout(`${API_BASE}/api/Orders/checkout-cart`, payload);
+                await processCheckout(`${API_BASE}/api/Orders/checkout-cart`, payload, paymentMethod);
             }
         });
     }
 
     // Xử lý gửi Request và phản hồi UI
-    async function processCheckout(url, payload) {
+    async function processCheckout(url, payload, paymentMethod) {
         try {
             const response = await fetch(url, {
                 method: 'POST',
@@ -77,28 +77,45 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             if (response.ok) {
-                let orderId = null;
+                let responseJson = null;
                 try {
-                    const json = await response.json();
-                    orderId = json && (json.orderId || json.id || json.orderID);
+                    responseJson = await response.json();
                 } catch { }
 
-                Swal.fire({
-                    title: 'Đặt hàng thành công!',
-                    text: orderId ? `Mã đơn hàng của bạn: #${orderId}` : 'Đơn hàng đã được ghi nhận.',
-                    icon: 'success',
-                    timer: 2500,
-                    showConfirmButton: false
-                }).then(() => {
-                    // Chuyển hướng về trang lịch sử mua hàng
-                    window.location.href = "/Storefront/order-history";
-                });
+                // Kiểm tra xem Backend có trả về paymentUrl (dùng cho VNPay) hay không
+                const paymentUrl = responseJson && (responseJson.paymentUrl || responseJson.PaymentUrl);
+
+                if (paymentMethod === 'VNPAY' && paymentUrl) {
+                    // Nếu là VNPay và có link, tiến hành chuyển hướng sang cổng thanh toán VNPay
+                    Swal.fire({
+                        title: 'Đang chuyển hướng...',
+                        text: 'Đang kết nối đến cổng thanh toán VNPay.',
+                        icon: 'info',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.href = paymentUrl;
+                    });
+                } else {
+                    // Trường hợp COD hoặc các phương thức thông thường
+                    let orderId = responseJson && (responseJson.orderId || responseJson.id || responseJson.orderID);
+
+                    Swal.fire({
+                        title: 'Đặt hàng thành công!',
+                        text: orderId ? `Mã đơn hàng của bạn: #${orderId}` : 'Đơn hàng đã được ghi nhận.',
+                        icon: 'success',
+                        timer: 2500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        // Chuyển hướng về trang lịch sử mua hàng
+                        window.location.href = "/Storefront/order-history";
+                    });
+                }
             } else {
                 // Đọc lỗi trả về từ Backend (Ví dụ lỗi: Hết hàng, tranh chấp kho)
                 let errorMsg = "Đã xảy ra lỗi khi thanh toán.";
                 try {
                     const errorJson = await response.json();
-                    // Lấy message từ BadRequest(new { message = ex.Message })
                     errorMsg = errorJson.message || errorJson.title || JSON.stringify(errorJson);
                 } catch {
                     errorMsg = await response.text();
